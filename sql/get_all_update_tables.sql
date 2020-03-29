@@ -1,0 +1,1 @@
+SELECT name FROM AsuSps.sys.Tables WHERE name LIKE '%table_%';

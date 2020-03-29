@@ -44,16 +44,6 @@ def sort_list_by(list1, list2):
     z = [x for x, _ in groupby(sorted(zipped_pairs))]
     return z
 
-
-'''def group_sorted_list(x, y):
-    l = list(sort_list_by(x, y))
-    ll = []
-    for i in range(len(l) - 1):
-        if l[i][0] != l[i + 1][0]:
-            ll.append(l[i][1])
-    ll.append(l[len(l) - 1][1])
-    return ll'''
-
 def group_sorted_list(x,y):
     l = list(sort_list_by(x, y))
     #print(l)
@@ -178,8 +168,6 @@ def calc_probability(tabnum='False'):
         print('...end calculation 2.')
         diagramma_result(pr_tabnum,pr_crypt,tabnum)
         return [pr_tabnum, pr_crypt,pr_ID_SP_NAR]
-
-
 
 def diagramma_result(probability,group,name):#https://eax.me/python-matplotlib/
     print('draw plot...')
