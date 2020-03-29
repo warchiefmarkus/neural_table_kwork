@@ -28,25 +28,35 @@
 
   //POST REQUEST TO GET TABLE DATA 
   function getDB(m_i) {
-    $.ajax
+    if(daterange.length > 0){
+      if(document.getElementById('machine_instructor').value.length>0){
+        $.ajax
       ({
         type: "POST",
-        url: "{{url_for('getDB') }}",
+        url: "{{url_for('getDB')}}",
         dataType: 'json',
         async: false,
+        headers: {"Accept-Encoding": "gzip"},
         contentType: 'application/json',
         data: JSON.stringify({ "machine_instructor": m_i, "date_range": daterange }),
         success: function (msg) {
           console.log("SUCCESS ");
+          $('#machine_list').empty();
           JSON.parse(msg['message']).forEach(element => {
-            add(element,"21");
-          });
-          
+            add(element[0],element[1]);
+          });          
         },
         error: function (xhr, textStatus, errorThrown) {
           console.log("ERROR")
         }
       })
+      }else{
+        alert("FILL MACHINE-INSTRICTOR NUMBER");
+      }      
+    }else{
+      alert('CHOOSE DATES');
+    }
+    
   }
 
   // DATE LIST
@@ -92,9 +102,9 @@
 
     $('#get-checked-data').on('click', function (event) {
       event.preventDefault();
-      var checkedItems = {}, counter = 0;
+      var checkedItems = [], counter = 0;
       $('#check-list-box').find('li.active').each(function (idx, li) {
-        checkedItems[counter] = $(li).text();
+        checkedItems.push($(li).text());
         counter++;
       });
       daterange = JSON.stringify(checkedItems);

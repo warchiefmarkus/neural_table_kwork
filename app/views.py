@@ -39,8 +39,13 @@ def index():
 
 @app.route('/getDB', methods=['POST'])
 def getDB():
-    text = request.json['machine_instructor']
-    print('M_I', text)
-    l = [1,2,3]
+    m_i = request.json['machine_instructor']
+    date_range = request.json['date_range']
+    print('M_I', m_i, "DATERANGE", date_range)
+
+
+    l = [['max','1'],['den','2'],['mike','3']]
+    
+
     data = {'message': json.dumps(l), 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
