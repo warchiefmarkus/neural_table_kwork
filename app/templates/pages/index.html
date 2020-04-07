@@ -22,8 +22,8 @@
             <div class="card-header bg-transparent">
               <div class="row align-items-center">
                 <div class="col">
-                  <h6 class="text-uppercase text-light ls-1 mb-1">Overview</h6>
-                  <h2 class="text-white mb-0">Sales value</h2>
+                  <h6 class="text-uppercase text-light ls-1 mb-1">График</h6>
+                  <!-- <h2 class="text-white mb-0">Sales value</h2> -->
                 </div>
                 <div class="col">
                   <ul class="nav nav-pills justify-content-end">
@@ -53,6 +53,63 @@
           </div>
         </div>
 
+      </div>
+      <!-- <h6 class="text-uppercase text-light ls-1 mb-1">Вероятность нарушения машиниста</h6> -->
+
+      <div class="row mt-5">
+        <div class="col">
+          <div class="card bg-default shadow">
+            <div class="card-header bg-transparent border-0">
+              <h5 class="text-white mb-0">Вероятность нарушения для машиниста</h5>
+            </div>
+            <div class="table-responsive">
+              <table id="currtabnum_table" class="table align-items-center table-dark table-flush">
+                <thead class="thead-dark">
+                  <tr>
+                    <th scope="col">LastName</th>
+                    <th scope="col">FirstName</th>
+                    <th scope="col">PatrName</th>
+                    <th scope="col">ID_SP_NAR</th>
+                    <th scope="col">Расшифровка</th>                    
+                    <th scope="col">KOD_DEPO</th>
+                    <th scope="col">Стаж</th>
+                    <th scope="col">SpsSerieID</th>
+                    <th scope="col">SpsGroupID</th>
+                    <th scope="col">Num LokSeries4</th>
+                    <th scope="col">Код дороги</th>
+                    <th scope="col">ID_SP_NAR count on road</th>
+                    <th scope="col">DATE</th>
+                    <th scope="col">CurrTabNum</th>
+                    <th scope="col">Personal propability</th>
+                    <th scope="col">Количество</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row"></th>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </tr> 
+                </tbody>
+              </table>
+
+            </div>
+          </div>
+        </div>
       </div>
 
       {% include 'includes/footer.html' %}
