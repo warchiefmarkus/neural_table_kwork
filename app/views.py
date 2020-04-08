@@ -25,20 +25,26 @@ def get_bd_tables():
 def short_name(name):
     name = name.split(" ")[0]
 
-def formate_query(tablenames_list, machine_id):
+def formate_query_machine(tablenames_list, machine_id):
     query= ""
     for idx, table_name in enumerate(tablenames_list):
         print(table_name)
         query +="""
-SELECT [ID_SP_NAR]    
-,[машинист_инструктор]
-,[LastName]
-,[FirstName]
-,[PatrName]
-,[KOD_DEPO]
-,[CurrTabNum]
-,[personal_probability]
-,[расшифровка]
+SELECT DISTINCT 
+       [машинист_инструктор]
+      ,[LastName]
+      ,[FirstName] 
+      ,[PatrName]
+      ,[ID_SP_NAR]	
+	  ,[расшифровка]
+	  ,[KOD_DEPO]
+      ,[DateFrom] as стаж
+      ,[SpsSerieID]
+	  ,[SpsGroupID]
+	  ,[CurrTabNum]
+	  ,[personal_probability]
+      ,'"""+str(table_name)+"""' AS DATE
+      ,[RoadID] as RoadID
 FROM [AsuSps].[dbo].["""+str(table_name)+"""]
 where [машинист_инструктор]="""+str(machine_id)+"""
 """
@@ -46,7 +52,8 @@ where [машинист_инструктор]="""+str(machine_id)+"""
             query+="""
 UNION ALL
 """
-    return query   
+    return query
+    
 
 def formate_query_currtabnum(tablenames_list, currtabnum):
     query= ""
@@ -65,6 +72,8 @@ SELECT DISTINCT
 	  ,[SpsGroupID]
 	  ,[CurrTabNum]
 	  ,[personal_probability]
+      ,'"""+str(table_name)+"""' AS DATE
+      ,[RoadID] as RoadID
 FROM [AsuSps].[dbo].["""+str(table_name)+"""]
 where [CurrTabNum]="""+str(currtabnum)+"""
 """
@@ -93,8 +102,9 @@ def getDB():
     for date in html_dates:
         date_range.append("table_"+datetime.datetime.strptime(date,'%d.%m.%y').strftime('%Y%m%d'))
     print('M_I', m_i, "DATERANGE", date_range)
-    query = formate_query(date_range,m_i)
+    query = formate_query_machine(date_range,m_i)
     df = pd.read_sql(query,cnxn)
+    df = df.drop_duplicates(df.columns, keep='last')
     df["UID"] = df.LastName.str.cat(" "+df.FirstName).str.cat(" "+df.PatrName).str.cat(" "+df.CurrTabNum.astype(str))
     unique_grouped = df.groupby(['UID'])['ID_SP_NAR'].nunique().reset_index()
     unique_grouped['UID'] = unique_grouped["UID"].apply(lambda row: row.split(" ")[0]+" "+row.split(" ")[1][0]+"."+row.split(" ")[2][0]+". "+row.split(" ")[3])
@@ -112,6 +122,16 @@ def getCurrTabNum():
     df = pd.read_sql(query,cnxn)
     df = df.drop_duplicates(df.columns, keep='last')
     df['Количество'] = df.groupby('ID_SP_NAR')['ID_SP_NAR'].transform('count')
+    df["DATE"]=df['DATE'].apply(lambda row: datetime.datetime.strptime(row.split("_")[1], '%Y%m%d').strftime('%d.%m.%y'))
+    uniq = df.groupby(['ID_SP_NAR'])['RoadID'].nunique()
+    df['RoadCode'] = pd.Series()
+    for idx, row in df.iterrows():
+        df['RoadCode'][idx] = uniq[str(row['ID_SP_NAR'])]
 
-    data = {'message': json.dumps(df[:10].values.tolist()), 'code': 'SUCCESS'}
+    df["NumLokSeries4"] = df["SpsSerieID"].astype(str) + df["SpsGroupID"].astype(str)
+    uniq2 = df.groupby(['ID_SP_NAR'])['NumLokSeries4'].nunique()
+    for idx, row in df.iterrows():
+        df['NumLokSeries4'][idx] = str(uniq2[str(row['ID_SP_NAR'])])
+
+    data = {'message': json.dumps(df.values.tolist()), 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
