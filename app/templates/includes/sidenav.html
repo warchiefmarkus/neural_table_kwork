@@ -43,7 +43,7 @@
         contentType: 'application/json',
         data: JSON.stringify({ "machine_instructor": m_i, "date_range": daterange }),
         success: function (msg) {
-          console.log("REQUEST TABLES "+JSON.parse(msg['tables']))
+          //console.log("REQUEST TABLES "+JSON.parse(msg['tables']))
           document.getElementById('get-checked-data-mi').setAttribute("data",JSON.parse(msg['tables']))
           $('#machine_list').empty();
           JSON.parse(msg['message']).forEach(element => {
@@ -67,7 +67,7 @@
         async: false,
         headers: {"Accept-Encoding": "gzip"},
         contentType: 'application/json',
-        data: JSON.stringify({ "currtab": this.getAttribute("data"), "tables": document.getElementById('get-checked-data-mi').getAttribute("data")}),
+        data: JSON.stringify({ "mi":document.getElementById('machine_instructor').value, "currtab": this.getAttribute("data"), "tables": document.getElementById('get-checked-data-mi').getAttribute("data")}),
         success: function (msg) {
           console.log("SUCCESS "+JSON.parse(msg['message'])[0]);
 
@@ -84,13 +84,13 @@
                     "<td>"+element[7]+"</td>"+
                     "<td>"+element[8]+"</td>"+
                     "<td>"+element[15]+"</td>"+
-                    "<td>"+element[14]+"</td>"+                    
+                    "<td>"+element[16]+"</td>"+
+                    // "<td>"+element[14]+"</td>"+                    
                     "<td>"+element[9]+"</td>"+
                     "<td>"+element[10]+"</td>"+
                     "<td>"+element[11]+"</td>"+ 
                     "<td>"+element[12]+"</td>"+
-                    "<td>"+element[13]+"</td>"+
-                    "<td>"+element[14]+"</td>"+
+                    "<td>"+element[13]+"</td>"+                    
                     "</tr>");
           }); 
           
