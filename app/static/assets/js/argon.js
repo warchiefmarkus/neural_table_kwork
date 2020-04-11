@@ -897,7 +897,6 @@ var Charts = (function() {
 
 
 	// Return
-
 	return {
 		colors: colors,
 		fonts: fonts,
@@ -995,17 +994,24 @@ var OrdersChart = (function() {
 var SalesChart = (function() {
 
 	// Variables
-
 	var $chart = $('#chart-sales');
 
-
 	// Methods
-
 	function init($chart) {
 
 		var salesChart = new Chart($chart, {
-			type: 'line',
+			type: 'horizontalBar',
 			options: {
+
+				layout: {
+					padding: {
+						left: $('#chart-card').width()/4,
+						right: 0,
+						top: 0,
+						bottom: 0
+					}
+				},
+
 				scales: {
 					yAxes: [{
 						gridLines: {
@@ -1013,49 +1019,49 @@ var SalesChart = (function() {
 							zeroLineColor: Charts.colors.gray[900]
 						},
 						ticks: {
-							callback: function(value) {
-								if (!(value % 10)) {
-									return '$' + value + 'k';
-								}
-							}
+							fontSize: 20
+							// callback: function(value) {
+							// 	if (!(value % 10)) {
+							// 		return '$' + value + 'k';
+							// 	}
+							// }
 						}
 					}]
 				},
 				tooltips: {
-					callbacks: {
-						label: function(item, data) {
-							var label = data.datasets[item.datasetIndex].label || '';
-							var yLabel = item.yLabel;
-							var content = '';
+					// callbacks: {
+					// 	label: function(item, data) {
+					// 		var label = data.datasets[item.datasetIndex].label || '';
+					// 		var yLabel = item.yLabel;
+					// 		var content = '';
 
-							if (data.datasets.length > 1) {
-								content += '<span class="popover-body-label mr-auto">' + label + '</span>';
-							}
+					// 		// if (data.datasets.length > 1) {
+					// 		// 	content += '<span class="popover-body-label mr-auto">' + label + '</span>';
+					// 		// }
 
-							content += '<span class="popover-body-value">$' + yLabel + 'k</span>';
-							return content;
-						}
-					}
+					// 		content += '<span class="popover-body-value">' + yLabel + '</span>';
+					// 		return content;
+					// 	}
+					// }
 				}
 			},
 			data: {
-				labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-				datasets: [{
-					label: 'Performance',
-					data: [0, 20, 10, 30, 15, 40, 20, 60, 60]
-				}]
+				// labels: [
+				// 	'Несвоевременная сдача скоростемерной ленты модуля памяти КР - 1',
+				// 	'2', '3', '4', '5', '6', '7', '8', '9', '10'],
+				// datasets: [{
+				// 	label: '%',
+				// 	data: [11, 22, 33, 44, 55, 66, 77, 88, 99, 100]
+				// }]
 			}
 		});
 
 		// Save to jQuery object
-
 		$chart.data('chart', salesChart);
 
 	};
 
-
 	// Events
-
 	if ($chart.length) {
 		init($chart);
 	}

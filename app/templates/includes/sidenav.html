@@ -43,12 +43,44 @@
         contentType: 'application/json',
         data: JSON.stringify({ "machine_instructor": m_i, "date_range": daterange }),
         success: function (msg) {
-          //console.log("REQUEST TABLES "+JSON.parse(msg['tables']))
+          // SET CHOOSED TABLES NAMES
           document.getElementById('get-checked-data-mi').setAttribute("data",JSON.parse(msg['tables']))
+          // APPEND MACHINE MANS ROWS
           $('#machine_list').empty();
           JSON.parse(msg['message']).forEach(element => {
             add(element[0], element[1]);
           }); 
+
+          // SET GRAPHIC DATA
+          var $chart = $('#chart-sales');
+          var salesChart = new Chart($chart, {
+          type: 'horizontalBar',
+          options: {
+            layout: {
+              padding: {
+                left: $('#chart-card').width()/4,
+                right: 0,
+                top: 0,
+                bottom: 0
+              }
+            },
+            scales: {
+              yAxes: [{
+                gridLines: {
+                  color: Charts.colors.gray[900],
+                  zeroLineColor: Charts.colors.gray[900]
+                },
+                ticks: { fontSize: 20 }
+              }]
+            },
+            tooltips: {}
+          },
+          data: JSON.parse(msg["graphic_data"])
+          });
+          // Save to jQuery object
+          $chart.data('chart', salesChart);
+
+
 
 
     // ON CLICK MI LIST ITEM
@@ -69,10 +101,10 @@
         contentType: 'application/json',
         data: JSON.stringify({ "mi":document.getElementById('machine_instructor').value, "currtab": this.getAttribute("data"), "tables": document.getElementById('get-checked-data-mi').getAttribute("data")}),
         success: function (msg) {
-          console.log("SUCCESS "+JSON.parse(msg['message'])[0]);
+          console.log("SUCCESS "+JSON.parse(msg['table_data'])[0]);
 
           $("#currtabnum_table  tr:not(:first) ").remove();
-          JSON.parse(msg['message']).forEach(element => {
+          JSON.parse(msg['table_data']).forEach(element => {
             $("#currtabnum_table tr:last").after("<tr>"+
                     "<td>"+element[0]+"</td>"+
                     "<td>"+element[1]+"</td>"+
@@ -228,7 +260,7 @@
       <!-- Navigation -->
       <ul class="navbar-nav">
         <li class="nav-item">
-          <a class="nav-link" href="/">
+          <a class="nav-link" style="font-size: large;" href="/">
             <i class="ni ni-tv-2 text-primary"></i> Статистика
           </a>
         </li>

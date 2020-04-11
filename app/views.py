@@ -218,14 +218,10 @@ def index(path):
                                 content=render_template( 'pages/404.html' ) )
 
 
-
-
-
-
-
 # GET DATABASE MI LIST
 @app.route('/getDB', methods=['POST'])
 def getDB():
+    # MACHINE MANS
     m_i = request.json['machine_instructor']
     html_dates = json.loads(request.json['date_range'])
     date_range =[]
@@ -239,16 +235,28 @@ def getDB():
     unique_grouped = df.groupby(['UID'])['ID_SP_NAR'].nunique().reset_index()
     unique_grouped['UID'] = unique_grouped["UID"].apply(lambda row: row.split(" ")[0]+" "+row.split(" ")[1][0]+"."+row.split(" ")[2][0]+". "+row.split(" ")[3])
     
-    data = {'message': json.dumps(unique_grouped.values.tolist()), 'tables': json.dumps(date_range), 'code': 'SUCCESS'}
+    # GRAPHIC
+    graphic_data = [(lambda x: [str(df.loc[df.ID_SP_NAR ==str(144)]["расшифровка"][0])+" "+str(x), df.loc[df['ID_SP_NAR'] == str(x)]["personal_probability"].mean()]   )(x) for x in df.ID_SP_NAR.unique()[:10].astype(int)]
+    lables = [(lambda x: str(x[0]))(x) for x in graphic_data]
+    data = [(lambda x: float(x[1]))(x) for x in graphic_data]
+
+    graphic_data = json.dumps({ "labels": lables,
+                    "datasets": [{
+                        "label": '%',
+                        "data": data
+                    }]
+    })
+
+    data = {'message': json.dumps(unique_grouped.values.tolist()), 'tables': json.dumps(date_range), "graphic_data":graphic_data, 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
 
-# GET MI 
+# GET MACHINE MAN
 @app.route('/getCurrTabNum', methods=['POST'])
 def getCurrTabNum():
     currtab = request.json['currtab'].split(" ")[2]
     tables =  request.json['tables'].split(",")
     mi = request.json['mi']
-    print(currtab, " TABLES ", tables)
+
     query = formate_query_currtabnum(tables, currtab, mi)
     df = pd.read_sql(query,cnxn)
     df = df.drop_duplicates(df.columns, keep='last')
@@ -269,5 +277,7 @@ def getCurrTabNum():
     # print(df.columns)
     # print(df.values.tolist()[0])
 
-    data = {'message': json.dumps(df.values.tolist()), 'code': 'SUCCESS'}
+
+    data = {'table_data': json.dumps(df.values.tolist()), 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
+
