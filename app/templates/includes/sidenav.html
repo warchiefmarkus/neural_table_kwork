@@ -1,6 +1,9 @@
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
 <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+<link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css"
+  rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
 
 <script>
   // GLOBAL VAR MI DATE RANGE
@@ -10,19 +13,19 @@
   function add(name, col) {
     var list = document.getElementById('machine_list');
     var li = document.createElement("li");
-    li.setAttribute("data",name)
-    li.className="list-group-item"
-    li.style="cursor: pointer;"
+    li.setAttribute("data", name)
+    li.className = "list-group-item"
+    li.style = "cursor: pointer;"
 
     var row = document.createElement("div");
-    row.className="row"
+    row.className = "row"
     var col1 = document.createElement("div");
-    col1.className="col-10"
-    col1.innerHTML=name.split(" ")[0]+" "+name.split(" ")[1]+" ("+name.split(" ")[2]+")";
+    col1.className = "col-10"
+    col1.innerHTML = name.split(" ")[0] + " " + name.split(" ")[1] + " (" + name.split(" ")[2] + ")";
     var col2 = document.createElement("div");
-    col2.className="col-2 text-right"
-    col2.innerHTML=col;    
-    
+    col2.className = "col-2 text-right"
+    col2.innerHTML = col;
+
     row.append(col1);
     row.append(col2);
     li.appendChild(row);
@@ -30,145 +33,131 @@
   }
 
   // POST REQUEST TO GET TABLE DATA 
-  function getDB(m_i) {
-    if(daterange.length > 0){
-      if(document.getElementById('machine_instructor').value.length>0){
+  function getDB(m_i) {    
+    if (daterange.length > 0) {
+      if (document.getElementById('machine_instructor').value.length > 0) {
         $.ajax
-      ({
-        type: "POST",
-        url: "{{url_for('getDB')}}",
-        dataType: 'json',
-        async: false,
-        headers: {"Accept-Encoding": "gzip"},
-        contentType: 'application/json',
-        data: JSON.stringify({ "machine_instructor": m_i, "date_range": daterange }),
-        success: function (msg) {
-          // SET CHOOSED TABLES NAMES
-          document.getElementById('get-checked-data-mi').setAttribute("data",JSON.parse(msg['tables']))
-          // APPEND MACHINE MANS ROWS
-          $('#machine_list').empty();
-          JSON.parse(msg['message']).forEach(element => {
-            add(element[0], element[1]);
-          }); 
+          ({
+            type: "POST",
+            url: "{{url_for('getDB')}}",
+            dataType: 'json',
+            async: false,
+            headers: { "Accept-Encoding": "gzip" },
+            contentType: 'application/json',
+            data: JSON.stringify({ "machine_instructor": m_i, "date_range": daterange, "isMipersid":document.getElementById('machine_instructor_toogle').checked}),
+            success: function (msg) {
+              // SET CHOOSED TABLES NAMES
+              document.getElementById('get-checked-data-mi').setAttribute("data", JSON.parse(msg['tables']))
+              // APPEND MACHINE MANS ROWS
+              $('#machine_list').empty();
+              JSON.parse(msg['message']).forEach(element => {
+                add(element[0], element[1]);
+              });
 
-          // SET GRAPHIC DATA
-          var $chart = $('#chart-sales');
-          var salesChart = new Chart($chart, {
-          type: 'horizontalBar',
-          options: {
-            layout: {
-              padding: {
-                left: $('#chart-card').width()/4,
-                right: 0,
-                top: 0,
-                bottom: 0
-              }
-            },
-            scales: {
-              yAxes: [{
-                gridLines: {
-                  color: Charts.colors.gray[900],
-                  zeroLineColor: Charts.colors.gray[900]
+              // SET GRAPHIC DATA
+              var $chart = $('#chart-sales');
+              var salesChart = new Chart($chart, {
+                type: 'horizontalBar',
+                options: {
+                  layout: {
+                    padding: {
+                      left: $('#chart-card').width() / 4,
+                      right: 0,
+                      top: 0,
+                      bottom: 0
+                    }
+                  },
+                  scales: {
+                    yAxes: [{
+                      gridLines: {
+                        color: Charts.colors.gray[900],
+                        zeroLineColor: Charts.colors.gray[900]
+                      },
+                      ticks: { fontSize: 20 }
+                    }]
+                  },
+                  tooltips: {}
                 },
-                ticks: { fontSize: 20 }
-              }]
+                data: JSON.parse(msg["graphic_data"])
+              });
+              // Save to jQuery object
+              $chart.data('chart', salesChart);
+
+              // ON CLICK MI LIST ITEM
+              $("#machine_list .list-group-item").on("click", function () {
+                $(" .list-group-item.active").removeClass('active');
+                $(this).addClass('active');
+
+                if (this.getAttribute("data").length > 0) {
+                  console.log(this.getAttribute("data"))
+
+                  $.ajax
+                    ({
+                      type: "POST",
+                      url: "{{url_for('getCurrTabNum')}}",
+                      dataType: 'json',
+                      async: false,
+                      headers: { "Accept-Encoding": "gzip" },
+                      contentType: 'application/json',
+                      data: JSON.stringify({ "mi": document.getElementById('machine_instructor').value, "currtab": this.getAttribute("data"), "tables": document.getElementById('get-checked-data-mi').getAttribute("data") }),
+                      success: function (msg) {
+                        console.log("SUCCESS " + JSON.parse(msg['table_data'])[0]);
+
+                        $("#currtabnum_table  tr:not(:first) ").remove();
+                        JSON.parse(msg['table_data']).forEach(element => {
+                          $("#currtabnum_table tr:last").after("<tr>" +
+                            "<td>" + element[0] + "</td>" +
+                            "<td>" + element[1] + "</td>" +
+                            "<td>" + element[2] + "</td>" +
+                            "<td>" + element[3] + "</td>" +
+                            "<td>" + element[4] + "</td>" +
+                            "<td>" + element[5] + "</td>" +
+                            "<td>" + element[6] + "</td>" +
+                            "<td>" + element[7] + "</td>" +
+                            "<td>" + element[8] + "</td>" +
+                            "<td>" + element[15] + "</td>" +
+                            "<td>" + element[16] + "</td>" +
+                            // "<td>"+element[14]+"</td>"+                    
+                            "<td>" + element[9] + "</td>" +
+                            "<td>" + element[10] + "</td>" +
+                            "<td>" + element[11] + "</td>" +
+                            "<td>" + element[12] + "</td>" +
+                            "<td>" + element[13] + "</td>" +
+                            "</tr>");
+                        });  
+
+                      },
+                      error: function (xhr, textStatus, errorThrown) {
+                        console.log("ERROR")
+                      }
+                    })
+
+                } else {
+                  alert('CHOOSE DATES');
+                }
+
+              });
+
+
+
+
             },
-            tooltips: {}
-          },
-          data: JSON.parse(msg["graphic_data"])
-          });
-          // Save to jQuery object
-          $chart.data('chart', salesChart);
-
-
-
-
-    // ON CLICK MI LIST ITEM
-    $("#machine_list .list-group-item").on("click",function(){
-    $(" .list-group-item.active").removeClass('active');
-    $(this).addClass('active');
-
-    if(this.getAttribute("data").length > 0){
-      console.log(this.getAttribute("data"))
-
-      $.ajax
-      ({
-        type: "POST",
-        url: "{{url_for('getCurrTabNum')}}",
-        dataType: 'json',
-        async: false,
-        headers: {"Accept-Encoding": "gzip"},
-        contentType: 'application/json',
-        data: JSON.stringify({ "mi":document.getElementById('machine_instructor').value, "currtab": this.getAttribute("data"), "tables": document.getElementById('get-checked-data-mi').getAttribute("data")}),
-        success: function (msg) {
-          console.log("SUCCESS "+JSON.parse(msg['table_data'])[0]);
-
-          $("#currtabnum_table  tr:not(:first) ").remove();
-          JSON.parse(msg['table_data']).forEach(element => {
-            $("#currtabnum_table tr:last").after("<tr>"+
-                    "<td>"+element[0]+"</td>"+
-                    "<td>"+element[1]+"</td>"+
-                    "<td>"+element[2]+"</td>"+
-                    "<td>"+element[3]+"</td>"+
-                    "<td>"+element[4]+"</td>"+                                       
-                    "<td>"+element[5]+"</td>"+
-                    "<td>"+element[6]+"</td>"+
-                    "<td>"+element[7]+"</td>"+
-                    "<td>"+element[8]+"</td>"+
-                    "<td>"+element[15]+"</td>"+
-                    "<td>"+element[16]+"</td>"+
-                    // "<td>"+element[14]+"</td>"+                    
-                    "<td>"+element[9]+"</td>"+
-                    "<td>"+element[10]+"</td>"+
-                    "<td>"+element[11]+"</td>"+ 
-                    "<td>"+element[12]+"</td>"+
-                    "<td>"+element[13]+"</td>"+                    
-                    "</tr>");
-          }); 
-          
-          
-          // $('#machine_list').empty();
-          // JSON.parse(msg['message']).forEach(element => {
-          //   add(element[2],element[1], element[0]);
-          // }); 
-          // $("#machine_list .list-group-item").on("click",function(){
-          //     console.log("CLICK ")
-          //     $("#machine_list .list-group-item.active").removeClass('active');
-          //     $(this).addClass('active');
-          // });    
-
-        },
-        error: function (xhr, textStatus, errorThrown) {
-          console.log("ERROR")
-        }
-      })
-     
-    }else{
-      alert('CHOOSE DATES');
-    }
-
-});
-
-
-
-
-        },
-        error: function (xhr, textStatus, errorThrown) {
-          console.log("ERROR")
-        }
-      })
-      }else{
+            error: function (xhr, textStatus, errorThrown) {
+              console.log("ERROR")
+            }
+          })
+      } else {
         alert("FILL MACHINE-INSTRICTOR NUMBER");
-      }      
-    }else{
+      }
+    } else {
       alert('CHOOSE DATES');
     }
-    
+
   }
 
   // MI DATE LIST
   $(function () {
-    
+
     $('.list-group.checked-list-box .list-group-item').each(function () {
       var $widget = $(this),
         $checkbox = $('<input style="visibility: hidden" type="checkbox" class="hidden" />'),
@@ -220,10 +209,10 @@
 
 
 
-   
-   
 
- 
+
+
+
   })
 
 
@@ -285,7 +274,16 @@
           </div>
           <label style="margin-top:10px;" for="textInput">Номер машиниста-инструктора</label>
           <!-- MI INPUT -->
-          <input type="text" id="machine_instructor" value="12488" class="form-control mb-4" placeholder="">
+          <div class="row">
+            <div class="col-6">
+              <input type="text" id="machine_instructor" value="12488" class="form-control mb-4" placeholder="">
+            </div>
+            <div clas="col-6">
+              <input id="machine_instructor_toogle" type="checkbox" checked data-toggle="toggle" data-onstyle="primary"
+                data-on="mipersid" data-off="currtabnum">
+            </div>
+
+          </div>
           <!-- DB LOAD BUTTON -->
           <button type="button" class="btn-primary btn-lg btn-block"
             onclick="getDB(document.getElementById('machine_instructor').value)">ВЫВЕСТИ ОТЧЕТ</button>
@@ -305,7 +303,7 @@
               <p>Кол. уник. нар.</p>
             </div>
           </div>
-          
+
           <!-- LIST -->
           <div id="get-checked-data-mi" style="height: 700px; overflow: auto;" class="panel panel-default">
             <ul id="machine_list" style="margin-bottom: 10px; overflow:hidden;" class="list-group checked-list-box">

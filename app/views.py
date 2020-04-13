@@ -220,10 +220,19 @@ def index(path):
 
 # GET DATABASE MI LIST
 @app.route('/getDB', methods=['POST'])
-def getDB():
+def getDB():    
     # MACHINE MANS
     m_i = request.json['machine_instructor']
     html_dates = json.loads(request.json['date_range'])
+    isMipersid = request.json['isMipersid']
+    
+    if(isMipersid):
+        print("MIPERSID "+m_i)
+    else:
+        print("CURTAB TO MIPERID "+m_i)
+        m_i=int(pd.read_sql("""SELECT [mipersid],[currtabnum] FROM [AsuSps].[dbo].[dict] where [currtabnum]="""+m_i,cnxn)["mipersid"])
+        print(m_i)
+
     date_range =[]
     for date in html_dates:
         date_range.append("table_"+datetime.datetime.strptime(date,'%d.%m.%y').strftime('%Y%m%d'))
