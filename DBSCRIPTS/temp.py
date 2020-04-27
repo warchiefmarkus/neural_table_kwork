@@ -128,10 +128,22 @@ for idx, row in df.iterrows():
 
 df["DATE"]=df['DATE'].apply(lambda row: datetime.datetime.strptime(row.split("_")[1], '%Y%m%d').strftime('%d.%m.%y'))
 
-df["NumLokSeries4"] = df["SpsSerieID"].astype(str) + df["SpsGroupID"].astype(str)
-uniq2 = df.groupby(['ID_SP_NAR'])['NumLokSeries4'].nunique()
+
+
+
+df["CountLockSeries"] = df["SpsSerieID"].astype(str) +"_"+ df["SpsGroupID"].astype(str)+"_"+df["ID_SP_NAR"]
+vc = df["CountLockSeries"].value_counts()
+df["CountLockSeries"] = df["CountLockSeries"].apply(lambda x: vc[x])
+
+    
+uniq2 = df.groupby(['ID_SP_NAR'])['CountLockSeries'].nunique() # 19 уникальных склеек спс + спс гроуп
+# теперь для каждой строчки в выгрузке ДФ
 for idx, row in df.iterrows():
-    df['NumLokSeries4'][idx] = uniq2[str(row['ID_SP_NAR'])]
+    df['CountLockSeries'][idx] = str(uniq2[str(row['ID_SP_NAR'])]) # колонка КаунтЛокСериес от индекса
+    # равна 
+
+
+
 
 
 mi = 92380685
@@ -140,14 +152,26 @@ mi=int(pd.read_sql("""SELECT [mipersid],[currtabnum] FROM [AsuSps].[dbo].[dict] 
 #------------------------------------------------------------------------------
 
 
+def formate_query_risks(tablenames_list, id_sp_nar):
+    query= ""
+    for idx, table_name in enumerate(tablenames_list):
+        query +="""
+select avg([personal_probability])
+FROM [AsuSps].[dbo].["""+str(table_name)+"""]
+where [ID_SP_NAR]="""+str(id_sp_nar)+"""
+"""
+        if (idx!=len(tablenames_list)-1):
+            query+="""
+UNION ALL
+"""
+    return query
+
+
+tablenames_list =  ["table_20200324","table_20200323"]
 df["RISKS"] = pd.Series()
 
 for idx, row in df.iterrows():    
-    average = (float(pd.read_sql("""
-select avg([personal_probability])
-from [AsuSps].[dbo].[table_20200320]
-where  [ID_SP_NAR]="""+df["ID_SP_NAR"][idx]+"""group by [машинист_инструктор]""",cnxn).iloc(0)[0]))
-    
+    average = (float(pd.read_sql(formate_query_risks(tablenames_list,df["ID_SP_NAR"][idx]),cnxn).mean()))
     personal = df["personal_probability"][idx]
     if ((average - personal)/average>=20):
         df['RISKS'][idx] = 2
@@ -157,47 +181,103 @@ where  [ID_SP_NAR]="""+df["ID_SP_NAR"][idx]+"""group by [машинист_инс
 
 
 
-df["RISKS"]= df["ID_SP_NAR"].str.cat(" "+df["personal_probability"].astype(str))
 
-df["RISKS"]= df["RISKS"].apply(lambda row:      (float(pd.read_sql("""
-select avg([personal_probability])
-  from [AsuSps].[dbo].[table_20200320]
-  where  [ID_SP_NAR]=""" +str(row.split(" ")[0])+ """
-  group by [машинист_инструктор]
-""",cnxn).iloc(0)[0] ) - row.split(" ")[1])/              )
+m=pd.read_sql(formate_query_risks(tablenames_list,df["ID_SP_NAR"][idx]),cnxn)
+    
+    
+#--------------------------------------------------
+tablenames_list =  ["table_20200324","table_20200323"]
+road_id = 96
 
-    
-    
-  if ( (аверадж - курент_проб)/аверадж>=20 ){
-	flag = 2;
-  }
-  if ( (аверадж - курент_проб)/аверадж<20){
-	falg = 1;
-  }
 
+def formate_query_split(tablenames_list):
+    query= ""
+    for idx, table_name in enumerate(tablenames_list):
+        query +="""
+select ID_SP_NAR, RoadID
+FROM [AsuSps].[dbo].["""+str(table_name)+"""]"""
+
+        if (idx!=len(tablenames_list)-1):
+            query+="""
+UNION ALL
+"""
+    return query
+
+def formate_query_road_id(tablenames_list, id_sp_nar, road_id):
+    query= ""
+    for idx, table_name in enumerate(tablenames_list):
+        query +="""
+select
+avg ([personal_probability])
+FROM [AsuSps].[dbo].["""+str(table_name)+"""]
+    where [ID_SP_NAR]="""+str(id_sp_nar)+""" 
+    and [RoadID]="""+str(road_id)+""" 
+group by [RoadID]
+"""
+        if (idx!=len(tablenames_list)-1):
+            query+="""
+UNION ALL
+"""
+    return query
+
+query = formate_query_split(tablenames_list)
+df = pd.read_sql(query,cnxn)
+uniq_road_id=pd.DataFrame(df['ID_SP_NAR'].unique(), columns=["ID_SP_NAR"])
     
-row = 144
-float(pd.read_sql("""
-select avg([personal_probability])
-  from [AsuSps].[dbo].[table_20200320]
-  where  [ID_SP_NAR]=""" +str(row)+"""
-  group by [машинист_инструктор]
-""",cnxn).iloc(0)[0])
+#--road_id
+uniq_road_id["AVERAGE"]=pd.Series()
+for idx, row in uniq_road_id.iterrows():    
+    uniq_road_id["AVERAGE"][idx] = (float(pd.read_sql(formate_query_road_id(tablenames_list,int(row[0]),road_id),cnxn).mean()))
     
     
+#--------------------------------------------------
+tablenames_list =  ["table_20200324","table_20200323"]
+enterprise_id = 3629
+
+
+def formate_query_split(tablenames_list):
+    query= ""
+    for idx, table_name in enumerate(tablenames_list):
+        query +="""
+select ID_SP_NAR, EnterpriseID
+FROM [AsuSps].[dbo].["""+str(table_name)+"""]"""
+
+        if (idx!=len(tablenames_list)-1):
+            query+="""
+UNION ALL
+"""
+    return query
+
+def formate_query_road_id(tablenames_list, id_sp_nar, road_id):
+    query= ""
+    for idx, table_name in enumerate(tablenames_list):
+        query +="""
+select
+avg ([personal_probability])
+FROM [AsuSps].[dbo].["""+str(table_name)+"""]
+    where [ID_SP_NAR]="""+str(id_sp_nar)+""" 
+    and [EnterpriseID]="""+str(enterprise_id)+""" 
+group by [EnterpriseID]
+"""
+        if (idx!=len(tablenames_list)-1):
+            query+="""
+UNION ALL
+"""
+    return query
+
+query = formate_query_split(tablenames_list)
+df = pd.read_sql(query,cnxn)
+uniq_enterprise_id=pd.DataFrame(df['ID_SP_NAR'].unique(), columns=["ID_SP_NAR"])
     
+#--road_id
+uniq_enterprise_id["AVERAGE"]=pd.Series()
+for idx, row in uniq_enterprise_id.iterrows():    
+    uniq_enterprise_id["AVERAGE"][idx] = (float(pd.read_sql(formate_query_road_id(tablenames_list,int(row[0]),enterprise_id),cnxn).mean()))
     
+
+print(uniq_enterprise_id.values.tolist())
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     
     
     

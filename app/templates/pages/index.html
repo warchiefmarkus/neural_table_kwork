@@ -123,28 +123,36 @@
         <div class="col-6">
           <div class="card bg-default shadow">
             <div class="card-header bg-transparent border-0">
-              <h5 class="text-white mb-0">Cтатистика по всей дороги</h5>
+              <h5 class="text-white mb-0">Cтатистика по всей дороге</h5>
             </div>
             <div style="height: 500px;">              
               <div class="row">
                 <!-- ROAD_ID INPUT -->
-                <div class="col-4">                  
-                <div class="card ml-4 mt-4" >
+                <div class="col-6">                  
+                <div class="card col-xs-12 ml-4 mt-4" >
                         <div class="card-block">
                         <div class="card-header">
                           RoadID
                         </div>
                         <div class="card-body">
                           <input type="text" id="road_id_input" value="96" class="form-control mb-1" placeholder="">
-                          <button type="submit" class="btn btn-block btn-primary">SHOW</button>
+                          <button onclick="getRoadId()" type="button" id="road_id_button" class="btn btn-block btn-primary">ВЫВЕСТИ</button>
                         </div>
                         </div>
                       </div>
                 </div>
                 <!-- GRAPH -->
-                <div clas="col-8">
-                  
-
+                <div class="col-6">
+                  <div style="height: 450px; overflow: auto;" class="card mt-4 mr-4">
+                    <div class="card-header">
+                      <div class="row">
+                          <div class="col">Нарушение</div>
+                          <div class="col text-right">Вероятность</div>
+                         </div>
+                     </div>
+                    <ul id="road_id_list" style="margin-bottom: 10px; overflow-y:scroll;" class="list-group list-group-flush">
+                    </ul>
+                  </div>  
                 </div>
     
               </div>
@@ -159,6 +167,37 @@
               <h5 class="text-white mb-0">Cтатистика по Кокрс</h5>
             </div>
             <div style="height: 500px;">
+              <div class="row">
+                <!-- ENTERPRISE_ID INPUT -->
+                <div class="col-6">                  
+                <div class="card col-xs-12 ml-4 mt-4" >
+                        <div class="card-block">
+                        <div class="card-header">
+                          EnterpriseID
+                        </div>
+                        <div class="card-body">
+                          <input type="text" id="enterprise_id_input" value="3629" class="form-control mb-1" placeholder="">
+                          <button onclick="getEnterpriseId()" type="button" id="road_id_button" class="btn btn-block btn-primary">ВЫВЕСТИ</button>
+                        </div>
+                        </div>
+                      </div>
+                </div>
+                <!-- GRAPH -->
+                <div class="col-6">
+                  <div style="height: 450px; overflow: auto;" class="card mt-4 mr-4">
+                    <div class="card-header">
+                      <div class="row">
+                          <div class="col">Нарушение</div>
+                          <div class="col text-right">Вероятность</div>
+                         </div>
+                     </div>
+                    <ul id="enterprises_id_list" style="margin-bottom: 10px; overflow-y:scroll;" class="list-group list-group-flush">
+                    </ul>
+                  </div>  
+                </div>
+    
+              </div>
+            </div>
 
             </div>
 

@@ -298,7 +298,87 @@ def getCurrTabNum():
     # print(df.columns)
     # print(df.values.tolist()[0])
 
-
     data = {'table_data': json.dumps(df.values.tolist()), 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
 
+
+def formate_query_split(tablenames_list):
+    query= ""
+    for idx, table_name in enumerate(tablenames_list):
+        query +="""
+select ID_SP_NAR, RoadID
+FROM [AsuSps].[dbo].["""+str(table_name)+"""]"""
+
+        if (idx!=len(tablenames_list)-1):
+            query+="""
+UNION ALL
+"""
+    return query
+
+def formate_query_road_id(tablenames_list, id_sp_nar, road_id):
+    query= ""
+    for idx, table_name in enumerate(tablenames_list):
+        query +="""
+select
+avg ([personal_probability])
+FROM [AsuSps].[dbo].["""+str(table_name)+"""]
+    where [ID_SP_NAR]="""+str(id_sp_nar)+""" 
+    and [RoadID]="""+str(road_id)+""" 
+group by [RoadID]
+"""
+        if (idx!=len(tablenames_list)-1):
+            query+="""
+UNION ALL
+"""
+    return query
+
+def formate_query_enterprise_id(tablenames_list, id_sp_nar, enterprise_id):
+    query= ""
+    for idx, table_name in enumerate(tablenames_list):
+        query +="""
+select
+avg ([personal_probability])
+FROM [AsuSps].[dbo].["""+str(table_name)+"""]
+    where [ID_SP_NAR]="""+str(id_sp_nar)+""" 
+    and [EnterpriseID]="""+str(enterprise_id)+""" 
+group by [EnterpriseID]
+"""
+        if (idx!=len(tablenames_list)-1):
+            query+="""
+UNION ALL
+"""
+    return query
+
+# GET ROAD_ID SPLIT
+@app.route('/getRoadId', methods=['POST'])
+def getRoadId():
+    road_id = request.json['road_id']
+    tablenames_list =  request.json['tables']
+
+    query = formate_query_split(tablenames_list)
+    df = pd.read_sql(query,cnxn)
+    uniq_road_id=pd.DataFrame(df['ID_SP_NAR'].unique(), columns=["ID_SP_NAR"])
+        
+    uniq_road_id["AVERAGE"]=pd.Series()
+    for idx, row in uniq_road_id.iterrows():    
+        uniq_road_id["AVERAGE"][idx] = (str(pd.read_sql(formate_query_road_id(tablenames_list,int(row[0]),road_id),cnxn).mean()))
+    uniq_road_id = uniq_road_id.sort_values('AVERAGE',ascending=True)
+    data = {'table_data': json.dumps(uniq_road_id.values.tolist()), 'code': 'SUCCESS'}
+    return make_response(jsonify(data), 201)
+
+# GET ENTERPRISE_ID SPLIT
+@app.route('/getEnterpriseId', methods=['POST'])
+def getEnterpriseId():
+    enterprise_id = request.json['enterprise_id']
+    tablenames_list =  request.json['tables']
+
+    query = formate_query_split(tablenames_list)
+    df = pd.read_sql(query,cnxn)
+    uniq_enterprise_id=pd.DataFrame(df['ID_SP_NAR'].unique(), columns=["ID_SP_NAR"])
+        
+    uniq_enterprise_id["AVERAGE"]=pd.Series()
+    for idx, row in uniq_enterprise_id.iterrows():    
+        uniq_enterprise_id["AVERAGE"][idx] = (str(pd.read_sql(formate_query_enterprise_id(tablenames_list,int(row[0]),enterprise_id),cnxn).mean()))
+    uniq_enterprise_id = uniq_enterprise_id.sort_values('AVERAGE',ascending=True)
+    data = {'table_data': json.dumps(uniq_enterprise_id.values.tolist()), 'code': 'SUCCESS'}
+    return make_response(jsonify(data), 201)

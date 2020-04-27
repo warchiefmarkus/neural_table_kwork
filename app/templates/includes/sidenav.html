@@ -207,16 +207,110 @@
       });
       daterange = JSON.stringify(checkedItems);
     });
-
-
-
-
-
-
-
   })
 
+// GET ROAD ID SPLIT
+  function getRoadId() {    
+    console.log(document.getElementById('road_id_input').value)
+    if (document.getElementById('road_id_input').value.length > 0) {
+        if ( daterange.length > 0) {
+          var tables = []; 
+          $('ul#check-list-box').find('li.active').each(function (ind){tables.push(this.getAttribute("data"))});
 
+        $.ajax
+          ({
+            type: "POST",
+            url: "{{url_for('getRoadId')}}",
+            dataType: 'json',
+            async: false,
+            headers: { "Accept-Encoding": "gzip" },
+            contentType: 'application/json',
+            data: JSON.stringify({ "road_id": document.getElementById('road_id_input').value, "tables": tables}),
+            success: function (msg) {
+              // APPEND MACHINE MANS ROWS
+              $('#road_id_list').empty();
+              JSON.parse(msg['table_data']).forEach(element => {
+                addRoadIdRow(element[0], parseFloat(element[1]).toFixed(2));
+              });
+
+            },
+            error: function (xhr, textStatus, errorThrown) {
+              console.log("ERROR")
+            }
+          })
+      } else {
+        alert("CHOOSE DATES");
+      }
+    }else{
+        alert("FILL ROAD_ID");
+      }
+
+  }
+
+    function addRoadIdRow(id_sp_nar, probability) {
+      var list = document.getElementById('road_id_list');
+      var li = document.createElement("li");
+      li.className = "list-group-item d-flex justify-content-between align-items-center"
+      li.style = "cursor: pointer;"
+      li.innerHTML = id_sp_nar;    
+      var span = document.createElement("span");
+      span.className = "badge badge-primary badge-pill";
+      span.innerHTML = probability;
+      li.appendChild(span);
+      list.appendChild(li);
+  }
+
+  // GET ENTERPRISEID SPLIT
+  function getEnterpriseId() {    
+    if (document.getElementById('enterprise_id_input').value.length > 0) {
+        if ( daterange.length > 0) {
+
+          var tables = []; 
+          $('ul#check-list-box').find('li.active').each(function (ind){tables.push(this.getAttribute("data"))});
+
+        $.ajax
+          ({
+            type: "POST",
+            url: "{{url_for('getEnterpriseId')}}",
+            dataType: 'json',
+            async: false,
+            headers: { "Accept-Encoding": "gzip" },
+            contentType: 'application/json',
+            data: JSON.stringify({ "enterprise_id": document.getElementById('enterprise_id_input').value, "tables": tables}),
+            success: function (msg) {
+              console.log(msg)
+              // APPEND MACHINE MANS ROWS
+              $('#enterprise_id_list').empty();
+              JSON.parse(msg['table_data']).forEach(element => {
+                addEnterpriseIdRow(element[0], parseFloat(element[1]).toFixed(2));
+              });
+
+            },
+            error: function (xhr, textStatus, errorThrown) {
+              console.log("ERROR")
+            }
+          })
+      } else {
+        alert("CHOOSE DATES");
+      }
+    }else{
+        alert("FILL ROAD_ID");
+      }
+
+  }
+
+    function addEnterpriseIdRow(id_sp_nar, probability) {
+      var list = document.getElementById('enterprise_list');
+      var li = document.createElement("li");
+      li.className = "list-group-item d-flex justify-content-between align-items-center"
+      li.style = "cursor: pointer;"
+      li.innerHTML = id_sp_nar;      
+      var span = document.createElement("span");
+      span.className = "badge badge-primary badge-pill";
+      span.innerHTML = probability;
+      li.appendChild(span);
+      list.appendChild(li);
+  }
 
 
 </script>
@@ -298,10 +392,10 @@
           <!-- HEADER -->
           <div class="row">
             <div class="col-sm">
-              <p>Машинист</p>
+              <h5>Машинист</h5>
             </div>
             <div class="col-sm text-right">
-              <p>Кол. уник. нар.</p>
+              <h5>Кол. уник. нар.</h5>
             </div>
           </div>
 
