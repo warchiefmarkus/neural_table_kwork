@@ -5,3 +5,8 @@ flask_wtf
 flask_sqlalchemy
 flask_bcrypt
 gunicorn
+schedule
+pyodbc
+pandas
+numpy
+openpyxl

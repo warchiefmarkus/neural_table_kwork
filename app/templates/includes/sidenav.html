@@ -99,7 +99,7 @@
                       async: false,
                       headers: { "Accept-Encoding": "gzip" },
                       contentType: 'application/json',
-                      data: JSON.stringify({ "mi": document.getElementById('machine_instructor').value, "currtab": this.getAttribute("data"), "tables": document.getElementById('get-checked-data-mi').getAttribute("data") }),
+                      data: JSON.stringify({ "mi": document.getElementById('machine_instructor').value, "currtab": this.getAttribute("data"), "tables": document.getElementById('get-checked-data-mi').getAttribute("data"), "isMipersid":document.getElementById('machine_instructor_toogle').checked}),
                       success: function (msg) {
                         console.log("SUCCESS " + JSON.parse(msg['table_data'])[0]);
 
@@ -123,6 +123,7 @@
                             "<td>" + element[11] + "</td>" +
                             "<td>" + element[12] + "</td>" +
                             "<td>" + element[13] + "</td>" +
+                            "<td>" + element[17] + "</td>" +
                             "</tr>");
                         });  
 

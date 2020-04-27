@@ -11,10 +11,6 @@ from app        import app, lm, db, bc
 from app.models import User
 from app.forms  import LoginForm, RegisterForm
 
-
-
-
-
 # provide login manager with load_user callback
 @lm.user_loader
 def load_user(user_id):
@@ -28,73 +24,52 @@ def logout():
 
 # Register a new user
 @app.route('/register.html', methods=['GET', 'POST'])
-def register():
-    
+def register():    
     # declare the Registration Form
     form = RegisterForm(request.form)
-
     msg = None
-
     if request.method == 'GET': 
-
         return render_template('layouts/auth-default.html',
                                 content=render_template( 'pages/register.html', form=form, msg=msg ) )
 
     # check if both http method is POST and form is valid on submit
     if form.validate_on_submit():
-
         # assign form data to variables
         username = request.form.get('username', '', type=str)
         password = request.form.get('password', '', type=str) 
         email    = request.form.get('email'   , '', type=str) 
-
         # filter User out of database through username
         user = User.query.filter_by(user=username).first()
-
         # filter User out of database through username
         user_by_email = User.query.filter_by(email=email).first()
-
         if user or user_by_email:
-            msg = 'Error: User exists!'
-        
+            msg = 'Error: User exists!'        
         else:         
-
             pw_hash = password #bc.generate_password_hash(password)
-
             user = User(username, email, pw_hash)
-
             user.save()
-
-            msg = 'User created, please <a href="' + url_for('login') + '">login</a>'     
-
+            msg = 'User created, please <a href="' + url_for('login') + '">login</a>'   
     else:
-        msg = 'Input error'     
-
+        msg = 'Input error'   
     return render_template('layouts/auth-default.html',
                             content=render_template( 'pages/register.html', form=form, msg=msg ) )
 
 # Authenticate user
 @app.route('/login.html', methods=['GET', 'POST'])
-def login():
-    
+def login():    
     # Declare the login form
     form = LoginForm(request.form)
-
     # Flask message injected into the page, in case of any errors
     msg = None
 
     # check if both http method is POST and form is valid on submit
     if form.validate_on_submit():
-
         # assign form data to variables
         username = request.form.get('username', '', type=str)
         password = request.form.get('password', '', type=str) 
-
         # filter User out of database through username
         user = User.query.filter_by(user=username).first()
-
-        if user:
-            
+        if user:            
             #if bc.check_password_hash(user.password, password):
             if user.password == password:
                 login_user(user)
@@ -122,8 +97,8 @@ cursor = cnxn.cursor()
 
 def get_bd_tables():
     file = open('sql/get_all_update_tables.sql', 'r')
-    query = file.read();
-    file.close();
+    query = file.read()
+    file.close()
     res = pd.read_sql(query,cnxn)['name'].tolist()
     res.sort()
     return res
@@ -182,13 +157,29 @@ SELECT DISTINCT
       ,[RoadID] as RoadID
 FROM [AsuSps].[dbo].["""+str(table_name)+"""]
 where [CurrTabNum]="""+str(currtabnum)+"""
-and [машинист_инструктор]="""+mi+"""
+and [машинист_инструктор]="""+str(mi)+"""
 """
         if (idx!=len(tablenames_list)-1):
             query+="""
 UNION ALL
 """
     return query  
+
+
+def formate_query_risks(tablenames_list, id_sp_nar):
+    query= ""
+    for idx, table_name in enumerate(tablenames_list):
+        query +="""
+select avg([personal_probability])
+FROM [AsuSps].[dbo].["""+str(table_name)+"""]
+where [ID_SP_NAR]="""+str(id_sp_nar)+"""
+"""
+        if (idx!=len(tablenames_list)-1):
+            query+="""
+UNION ALL
+"""
+    return query
+
 
 
 @app.template_filter('strftime')
@@ -213,7 +204,8 @@ def index(path):
         # try to match the pages defined in -> pages/<input file>
         return render_template('layouts/default.html',
                                 content=render_template( 'pages/'+path), tables_list=get_bd_tables())
-    except:
+    except Exception as e:
+        print(e)
         return render_template('layouts/auth-default.html',
                                 content=render_template( 'pages/404.html' ) )
 
@@ -222,15 +214,15 @@ def index(path):
 @app.route('/getDB', methods=['POST'])
 def getDB():    
     # MACHINE MANS
-    m_i = request.json['machine_instructor']
+    m_i = int(request.json['machine_instructor'])
     html_dates = json.loads(request.json['date_range'])
     isMipersid = request.json['isMipersid']
     
     if(isMipersid):
-        print("MIPERSID "+m_i)
+        print("MIPERSID "+str(m_i))
     else:
-        print("CURTAB TO MIPERID "+m_i)
-        m_i=int(pd.read_sql("""SELECT [mipersid],[currtabnum] FROM [AsuSps].[dbo].[dict] where [currtabnum]="""+m_i,cnxn)["mipersid"])
+        print("CURTAB TO MIPERID "+str(m_i))
+        m_i=int(pd.read_sql("""SELECT [mipersid],[currtabnum] FROM [AsuSps].[dbo].[dict] where [currtabnum]="""+str(m_i),cnxn)["mipersid"])
         print(m_i)
 
     date_range =[]
@@ -262,9 +254,16 @@ def getDB():
 # GET MACHINE MAN
 @app.route('/getCurrTabNum', methods=['POST'])
 def getCurrTabNum():
+    isMipersid = request.json['isMipersid']
     currtab = request.json['currtab'].split(" ")[2]
     tables =  request.json['tables'].split(",")
     mi = request.json['mi']
+
+    if(isMipersid):
+        print("MIPERSID "+str(mi))
+    else:
+        mi=int(pd.read_sql("""SELECT [mipersid],[currtabnum] FROM [AsuSps].[dbo].[dict] where [currtabnum]="""+str(mi),cnxn)["mipersid"])
+        print(mi)
 
     query = formate_query_currtabnum(tables, currtab, mi)
     df = pd.read_sql(query,cnxn)
@@ -278,10 +277,23 @@ def getCurrTabNum():
 
     df["NumLokSeries4"] = df["SpsSerieID"].astype(str) +"_"+ df["SpsGroupID"].astype(str)
 
-    df["CountLockSeries"] = df["SpsSerieID"].astype(str) + df["SpsGroupID"].astype(str)
-    uniq2 = df.groupby(['ID_SP_NAR'])['CountLockSeries'].nunique()
-    for idx, row in df.iterrows():
-        df['CountLockSeries'][idx] = str(uniq2[str(row['ID_SP_NAR'])])
+    # df["CountLockSeries"] = df["SpsSerieID"].astype(str) + df["SpsGroupID"].astype(str)
+    # uniq2 = df.groupby(['ID_SP_NAR'])['CountLockSeries'].nunique()
+    # for idx, row in df.iterrows():
+    #     df['CountLockSeries'][idx] = str(uniq2[str(row['ID_SP_NAR'])])
+
+    df["CountLockSeries"] = df["SpsSerieID"].astype(str) +"_"+ df["SpsGroupID"].astype(str)+"_"+df["ID_SP_NAR"]
+    vc = df["CountLockSeries"].value_counts()
+    df["CountLockSeries"] = df["CountLockSeries"].apply(lambda x: vc[x])
+
+    df["RISKS"] = pd.Series()
+    for idx, row in df.iterrows():    
+        average = (float(pd.read_sql(formate_query_risks(tables,df["ID_SP_NAR"][idx]),cnxn).mean()))
+        personal = df["personal_probability"][idx]
+        if ((average - personal)/average>=20):
+            df['RISKS'][idx] = 2
+        elif ((average - personal)/average<20):
+            df['RISKS'][idx] = 1
 
     # print(df.columns)
     # print(df.values.tolist()[0])

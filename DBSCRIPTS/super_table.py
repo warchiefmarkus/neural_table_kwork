@@ -76,6 +76,7 @@ SELECT DISTINCT
 	    inner JOIN [routes_personal] rr ON pr5.[PersID] = rr.[PersRegID]
 
 	WHERE rp.MIPersID > 1
+    and pr5.IsDetached=0
 	and asutNbd_violations.ViolationDate >'2019-07-07 00:00:00.000'
 """
 

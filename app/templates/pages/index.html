@@ -88,6 +88,7 @@
                     <th scope="col">DATE</th>
                     <th scope="col">RoadID</th>
                     <th scope="col">Количество</th> 
+                    <th scope="col">Риски</th> 
                   </tr>
                 </thead>
                 <tbody>
@@ -108,7 +109,7 @@
                     <td></td>
                     <td></td>
                     <td></td>
-                    <!-- <td></td> -->
+                    <td></td>
                   </tr> 
                 </tbody>
               </table>
@@ -118,6 +119,58 @@
         </div>
       </div>
 
+      <div class="row mt-5">
+        <div class="col-6">
+          <div class="card bg-default shadow">
+            <div class="card-header bg-transparent border-0">
+              <h5 class="text-white mb-0">Cтатистика по всей дороги</h5>
+            </div>
+            <div style="height: 500px;">              
+              <div class="row">
+                <!-- ROAD_ID INPUT -->
+                <div class="col-4">                  
+                <div class="card ml-4 mt-4" >
+                        <div class="card-block">
+                        <div class="card-header">
+                          RoadID
+                        </div>
+                        <div class="card-body">
+                          <input type="text" id="road_id_input" value="96" class="form-control mb-1" placeholder="">
+                          <button type="submit" class="btn btn-block btn-primary">SHOW</button>
+                        </div>
+                        </div>
+                      </div>
+                </div>
+                <!-- GRAPH -->
+                <div clas="col-8">
+                  
+
+                </div>
+    
+              </div>
+            </div>
+
+            
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="card bg-default shadow">
+            <div class="card-header bg-transparent border-0">
+              <h5 class="text-white mb-0">Cтатистика по Кокрс</h5>
+            </div>
+            <div style="height: 500px;">
+
+            </div>
+
+            
+          </div>
+        </div>
+      </div>
+
+
+
+
+      
       {% include 'includes/footer.html' %}
 
     </div>

@@ -11,7 +11,7 @@ cnxn = pyodbc.connect("Driver={SQL Server};"
 
 cur = cnxn.cursor()
 
-table_name = "tableDEBUG_"+time.strftime("%Y%m%d", time.localtime())
+table_name = "table_"+time.strftime("%Y%m%d", time.localtime())
 
 # CREATE TABLE
 create_table_sql = '''

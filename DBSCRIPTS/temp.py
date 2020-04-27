@@ -134,4 +134,75 @@ for idx, row in df.iterrows():
     df['NumLokSeries4'][idx] = uniq2[str(row['ID_SP_NAR'])]
 
 
+mi = 92380685
+mi=int(pd.read_sql("""SELECT [mipersid],[currtabnum] FROM [AsuSps].[dbo].[dict] where [currtabnum]="""+str(mi),cnxn)["mipersid"])
 
+#------------------------------------------------------------------------------
+
+
+df["RISKS"] = pd.Series()
+
+for idx, row in df.iterrows():    
+    average = (float(pd.read_sql("""
+select avg([personal_probability])
+from [AsuSps].[dbo].[table_20200320]
+where  [ID_SP_NAR]="""+df["ID_SP_NAR"][idx]+"""group by [машинист_инструктор]""",cnxn).iloc(0)[0]))
+    
+    personal = df["personal_probability"][idx]
+    if ((average - personal)/average>=20):
+        df['RISKS'][idx] = 2
+    elif ((average - personal)/average<20):
+        df['RISKS'][idx] = 1
+    
+
+
+
+df["RISKS"]= df["ID_SP_NAR"].str.cat(" "+df["personal_probability"].astype(str))
+
+df["RISKS"]= df["RISKS"].apply(lambda row:      (float(pd.read_sql("""
+select avg([personal_probability])
+  from [AsuSps].[dbo].[table_20200320]
+  where  [ID_SP_NAR]=""" +str(row.split(" ")[0])+ """
+  group by [машинист_инструктор]
+""",cnxn).iloc(0)[0] ) - row.split(" ")[1])/              )
+
+    
+    
+  if ( (аверадж - курент_проб)/аверадж>=20 ){
+	flag = 2;
+  }
+  if ( (аверадж - курент_проб)/аверадж<20){
+	falg = 1;
+  }
+
+    
+row = 144
+float(pd.read_sql("""
+select avg([personal_probability])
+  from [AsuSps].[dbo].[table_20200320]
+  where  [ID_SP_NAR]=""" +str(row)+"""
+  group by [машинист_инструктор]
+""",cnxn).iloc(0)[0])
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
