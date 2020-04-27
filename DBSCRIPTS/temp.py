@@ -271,10 +271,11 @@ uniq_enterprise_id=pd.DataFrame(df['ID_SP_NAR'].unique(), columns=["ID_SP_NAR"])
     
 #--road_id
 uniq_enterprise_id["AVERAGE"]=pd.Series()
-for idx, row in uniq_enterprise_id.iterrows():    
-    uniq_enterprise_id["AVERAGE"][idx] = (float(pd.read_sql(formate_query_road_id(tablenames_list,int(row[0]),enterprise_id),cnxn).mean()))
+for idx, row in uniq_enterprise_id.iterrows(): 
+    p= str(pd.read_sql(formate_query_road_id(tablenames_list,int(row[0]),enterprise_id),cnxn).mean())    
+    print(p)
+    uniq_enterprise_id["AVERAGE"][idx] = p
     
-
 print(uniq_enterprise_id.values.tolist())
     
 

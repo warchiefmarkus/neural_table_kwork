@@ -362,7 +362,7 @@ def getRoadId():
     uniq_road_id["AVERAGE"]=pd.Series()
     for idx, row in uniq_road_id.iterrows():    
         uniq_road_id["AVERAGE"][idx] = (str(pd.read_sql(formate_query_road_id(tablenames_list,int(row[0]),road_id),cnxn).mean()))
-    uniq_road_id = uniq_road_id.sort_values('AVERAGE',ascending=True)
+    uniq_road_id = uniq_road_id.sort_values('AVERAGE', ascending=True)
     data = {'table_data': json.dumps(uniq_road_id.values.tolist()), 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
 
@@ -375,10 +375,11 @@ def getEnterpriseId():
     query = formate_query_split(tablenames_list)
     df = pd.read_sql(query,cnxn)
     uniq_enterprise_id=pd.DataFrame(df['ID_SP_NAR'].unique(), columns=["ID_SP_NAR"])
-        
-    uniq_enterprise_id["AVERAGE"]=pd.Series()
-    for idx, row in uniq_enterprise_id.iterrows():    
-        uniq_enterprise_id["AVERAGE"][idx] = (str(pd.read_sql(formate_query_enterprise_id(tablenames_list,int(row[0]),enterprise_id),cnxn).mean()))
-    uniq_enterprise_id = uniq_enterprise_id.sort_values('AVERAGE',ascending=True)
+    
+    uniq_enterprise_id["AVERAGE"]=pd.Series()    
+    for idx, row in uniq_enterprise_id.iterrows(): 
+        p = pd.read_sql(formate_query_enterprise_id(tablenames_list,int(row[0]),enterprise_id),cnxn).mean() 
+        uniq_enterprise_id["AVERAGE"][idx] = str(p)
+    uniq_enterprise_id = uniq_enterprise_id.sort_values('AVERAGE', ascending=True)
     data = {'table_data': json.dumps(uniq_enterprise_id.values.tolist()), 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
