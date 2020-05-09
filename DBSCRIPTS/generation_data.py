@@ -73,7 +73,7 @@ class generation_data(object):
         list8 = list(result.get('DateFrom').values())
         
         list9 = list(result.get('TabNum').values())
-        list10 = list(result.get('уволен или нет').values())
+        list10 = list(result.get('fired').values())
         
         list11 = list(result.get('LastName').values())
         list12 = list(result.get('FirstName').values())
@@ -108,7 +108,7 @@ class generation_data(object):
                         [i for i in range(len(TITLE)) if TITLE[i] == 'KOD_DEPO'],
                         [i for i in range(len(TITLE)) if TITLE[i] == 'TabNum'])
         # print(need_id_pers)
-        id_need_id_status = [i for i in range(len(TITLE)) if TITLE[i] == 'уволен или нет']
+        id_need_id_status = [i for i in range(len(TITLE)) if TITLE[i] == 'fired']
 
         id_ID_SP_NAR = [i for i in range(len(TITLE)) if TITLE[i] == 'ID_SP_NAR']
         id_Date_NAR = [i for i in range(len(TITLE)) if TITLE[i] == 'Date_NAR']
@@ -348,7 +348,7 @@ if __name__ == "__main__":
             'KOD_DEPO',
             'TabNum',
             'ID_SP_NAR',
-            'уволен или нет',
+            'fired',
             'personal probability',
             'general probability',
             'расшифровка']

@@ -1,11 +1,343 @@
-
-  <!-- Argon Scripts -->
-  <!-- Core -->
-  <script src="/static/assets/vendor/jquery/dist/jquery.min.js"></script>
-  <script src="/static/assets/vendor/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Optional JS -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/js/bootstrap-datepicker.min.js"></script> --> -->
   <script src="/static/assets/vendor/chart.js/dist/Chart.min.js"></script>
   <script src="/static/assets/vendor/chart.js/dist/Chart.extension.js"></script>
-  <!-- Argon JS -->
   <script src="/static/assets/js/argon.js?v=1.0.0"></script>
+  
+  <script>
+      // MACHINE_INGENEERS LIST ADD ITEM
+    function add(name, col) {
+      var list = document.getElementById('machine_list');
+      var li = document.createElement("li");
+      li.setAttribute("data", name)
+      li.className = "list-group-item"
+      li.style = "cursor: pointer;"
+  
+      var row = document.createElement("div");
+      row.className = "row"
+      var col1 = document.createElement("div");
+      col1.className = "col-10"
+      col1.innerHTML = name.split(" ")[0] + " " + name.split(" ")[1] + " (" + name.split(" ")[2] + ")";
+      var col2 = document.createElement("div");
+      col2.className = "col-2 text-right"
+      col2.innerHTML = col;
+  
+      row.append(col1);
+      row.append(col2);
+      li.appendChild(row);
+      list.appendChild(li);
+    }
+  
+    // POST REQUEST TO GET TABLE DATA 
+    function getDB(m_i) {    
+      var daterange = $('#from').val()+'-'+$('#to').val();
 
+      if (daterange.length > 0) {
+        if (document.getElementById('machine_instructor').value.length > 0) {
+
+          $.ajax
+            ({
+              type: "POST",
+              url: "{{url_for('getDB')}}",
+              dataType: 'json',
+              async: false,
+              headers: { "Accept-Encoding": "gzip" },
+              contentType: 'application/json',
+              data: JSON.stringify({ "machine_instructor": m_i, "date_range": daterange, "isMipersid":document.getElementById('machine_instructor_toogle').checked}),
+              success: function (msg) {
+                if(msg["isEmpty"]=="true"){
+                  alert("ВЫБРАННЫЙ ДИАПАЗОН НЕ ИМЕЕТ ТАБЛИЦ")
+                }else{
+                // SET CHOOSED TABLES NAMES
+                document.getElementById('get-checked-data-mi').setAttribute("data", JSON.parse(msg['tables']))
+                // APPEND MACHINE MANS ROWS
+                $('#machine_list').empty();
+                JSON.parse(msg['message']).forEach(element => {
+                  add(element[0], element[1]);
+                });
+  
+                // SET GRAPHIC DATA
+                var $chart = $('#chart-sales');
+                var salesChart = new Chart($chart, {
+                  type: 'horizontalBar',
+                  options: {
+                    layout: {
+                      padding: {
+                        left: $('#chart-card').width() / 4,
+                        right: 0,
+                        top: 0,
+                        bottom: 0
+                      }
+                    },
+                    scales: {
+                      yAxes: [{
+                        gridLines: {
+                          color: Charts.colors.gray[900],
+                          zeroLineColor: Charts.colors.gray[900]
+                        },
+                        ticks: { fontSize: 20 }
+                      }]
+                    },
+                    tooltips: {}
+                  },
+                  data: JSON.parse(msg["graphic_data"])
+                });                                
+                $chart.data('chart', salesChart);// Save to jQuery object
+                //-----------------------
+                
+                // ON CLICK MI LIST ITEM
+                $("#machine_list .list-group-item").on("click", function () {
+                  $(" .list-group-item.active").removeClass('active');
+                  $(this).addClass('active');
+  
+                  if (this.getAttribute("data").length > 0) {
+                    console.log(this.getAttribute("data"))
+  
+                    $.ajax
+                      ({
+                        type: "POST",
+                        url: "{{url_for('getMachineMans')}}",
+                        dataType: 'json',
+                        async: false,
+                        headers: { "Accept-Encoding": "gzip" },
+                        contentType: 'application/json',
+                        // "mi": document.getElementById('machine_instructor').value,
+                        data: JSON.stringify({ "currtab": this.getAttribute("data"), "tables": document.getElementById('get-checked-data-mi').getAttribute("data")}),
+                        success: function (msg) {
+                          console.log("SUCCESS " + JSON.parse(msg['table_data'])[0]);
+  
+                          $("#currtabnum_table  tr:not(:first) ").remove();
+                          JSON.parse(msg['table_data']).forEach(element => {
+                            $("#currtabnum_table tr:last").after("<tr>" +
+                              "<td>" + element[0] + "</td>" +
+                              "<td>" + element[1] + "</td>" +
+                              "<td>" + element[2] + "</td>" +
+                              "<td>" + element[3] + "</td>" +
+                              "<td>" + element[4] + "</td>" +
+                              "<td>" + element[5] + "</td>" +
+                              "<td>" + element[6] + "</td>" +
+                              "<td>" + element[7] + "</td>" +
+                              "<td>" + element[8] + "</td>" +
+                              "<td>" + element[15] + "</td>" +
+                              "<td>" + element[16] + "</td>" +
+                              // "<td>"+element[14]+"</td>"+                    
+                              "<td>" + element[9] + "</td>" +
+                              "<td>" + element[10] + "</td>" +
+                              "<td>" + element[11] + "</td>" +
+                              "<td>" + element[12] + "</td>" +
+                              "<td>" + element[13] + "</td>" +
+                              "<td>" + element[17] + "</td>" +
+                              "</tr>");
+                          });  
+  
+                        },
+                        error: function (xhr, textStatus, errorThrown) {
+                          console.log("ERROR")
+                        }
+                      })
+  
+                  } else {
+                    alert('CHOOSE DATES');
+                  }
+  
+                });
+  
+              }
+  
+  
+              },
+              error: function (xhr, textStatus, errorThrown) {
+                console.log("ERROR")
+              }
+            })
+        
+        
+          } else {
+          alert("FILL MACHINE-INSTRICTOR NUMBER");
+        }
+      } else {
+        alert('CHOOSE DATES');
+      }
+  
+    }
+  
+    $(function () {
+    
+      // DATERANGEPICKER
+      var startDate = new Date();
+      var fechaFin = new Date();
+      var FromEndDate = new Date();
+      var ToEndDate = new Date();
+      
+      $('#from').datepicker({
+          autoclose: true,
+          minViewMode: 1,
+          format: 'mm/yyyy'
+      }).on('changeDate', function(selected){
+              startDate = new Date(selected.date.valueOf());
+              startDate.setDate(startDate.getDate(new Date(selected.date.valueOf())));
+              $('#to').datepicker('setStartDate', startDate);            
+          }); 
+      
+      $('#to').datepicker({
+          autoclose: true,
+          minViewMode: 1,
+          format: 'mm/yyyy'
+      }).on('changeDate', function(selected){
+              FromEndDate = new Date(selected.date.valueOf());
+              FromEndDate.setDate(FromEndDate.getDate(new Date(selected.date.valueOf())));
+              $('#from').datepicker('setEndDate', FromEndDate);              
+          });
+      //------------------------
+      
+      // EMPLOYERS LIST
+      $('.list-group.checked-list-box .list-group-item').each(function () {
+        var $widget = $(this),
+          $checkbox = $('<input style="visibility: hidden" type="checkbox" class="hidden" />'),
+          color = ($widget.data('color') ? $widget.data('color') : "primary"),
+          style = ($widget.data('style') == "button" ? "btn-" : "list-group-item-"),settings={};
+
+        $widget.css('cursor', 'pointer')
+        $widget.append($checkbox);
+  
+        $widget.on('click', function () {
+          $checkbox.prop('checked', !$checkbox.is(':checked'));
+          $checkbox.triggerHandler('change');
+          updateDisplay();
+        });
+        $checkbox.on('change', function () {
+          updateDisplay();
+        });
+  
+        function updateDisplay() {
+          var isChecked = $checkbox.is(':checked');
+          $widget.data('state', (isChecked) ? "on" : "off");
+          if (isChecked) {
+            $widget.addClass("button" + ' active');
+          } else {
+            $widget.removeClass("success" + ' active');
+          }
+        }
+  
+        function init() {
+          if ($widget.data('checked') == true) {
+            $checkbox.prop('checked', !$checkbox.is(':checked'));
+          }
+          updateDisplay();
+        }
+        init();
+      });
+  
+      $('#get-checked-data').on('click', function (event) {
+        event.preventDefault();
+        var checkedItems = [], counter = 0;
+        $('#check-list-box').find('li.active').each(function (idx, li) {
+          // checkedItems.push($(li).text());
+          // counter++;
+        });
+        // daterange = JSON.stringify(checkedItems);
+      });
+    })
+    //--------------------
+  
+  // GET ROAD ID SPLIT
+    function getRoadId() {    
+      var daterange = $('#from').val()+'-'+$('#to').val();
+      console.log(document.getElementById('road_id_input').value)
+      if (document.getElementById('road_id_input').value.length > 0) {                      
+          $.ajax
+            ({
+              type: "POST",
+              url: "{{url_for('getRoadId')}}",
+              dataType: 'json',
+              async: false,
+              headers: { "Accept-Encoding": "gzip" },
+              contentType: 'application/json',
+              data: JSON.stringify({ "road_id": document.getElementById('road_id_input').value, "daterange": daterange}),
+              success: function (msg) {
+                if(msg["isEmpty"]=="true"){
+                  alert("ВЫБРАННЫЙ ДИАПАЗОН НЕ ИМЕЕТ ТАБЛИЦ")
+                }else{
+                // APPEND MACHINE MANS ROWS
+                $('#road_id_list').empty();
+                JSON.parse(msg['table_data']).forEach(element => {
+                  addRoadIdRow(element[0], parseFloat(element[1]).toFixed(2));
+                });  
+              }
+              },
+              error: function (xhr, textStatus, errorThrown) {
+                console.log("ERROR")
+              }
+            })
+      }else{
+          alert("FILL ROAD_ID");
+        }  
+    }
+  
+    function addRoadIdRow(id_sp_nar, probability) {
+        var list = document.getElementById('road_id_list');
+        var li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center"
+        li.style = "cursor: pointer;"
+        li.innerHTML = id_sp_nar;    
+        var span = document.createElement("span");
+        span.className = "badge badge-primary badge-pill";
+        span.innerHTML = probability;
+        li.appendChild(span);
+        list.appendChild(li);
+    }
+  
+    // GET ENTERPRISEID SPLIT
+    function getEnterpriseId() {    
+      var daterange = $('#from').val()+'-'+$('#to').val();
+      if (document.getElementById('enterprise_id_input').value.length > 0) {           
+          $.ajax
+            ({
+              type: "POST",
+              url: "{{url_for('getEnterpriseId')}}",
+              dataType: 'json',
+              async: false,
+              headers: { "Accept-Encoding": "gzip" },
+              contentType: 'application/json',
+              data: JSON.stringify({ "enterprise_id": document.getElementById('enterprise_id_input').value, "daterange": daterange}),
+              success: function (msg) {
+                if(msg["isEmpty"]=="true"){
+                  alert("ВЫБРАННЫЙ ДИАПАЗОН НЕ ИМЕЕТ ТАБЛИЦ")
+                }else{              
+                // APPEND MACHINE MANS ROWS
+                $('#enterprise_id_list').empty();
+                JSON.parse(msg['table_data']).forEach(element => {
+                  addEnterpriseIdRow(element[0], parseFloat(element[1]).toFixed(2));
+                });
+              }
+  
+              },
+              error: function (xhr, textStatus, errorThrown) {
+                console.log("ERROR")
+              }
+            })
+
+      }else{
+          alert("FILL ROAD_ID");
+        }
+  
+    }
+  
+    function addEnterpriseIdRow(id_sp_nar, probability) {
+        var list = document.getElementById('enterprises_id_list');
+        var li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center"
+        li.style = "cursor: pointer;"
+        li.innerHTML = id_sp_nar;      
+        var span = document.createElement("span");
+        span.className = "badge badge-primary badge-pill";
+        span.innerHTML = probability;
+        li.appendChild(span);
+        list.appendChild(li);
+    }
+  
+  
+  </script>

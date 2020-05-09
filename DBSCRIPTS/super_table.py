@@ -19,65 +19,67 @@ cnxn = pyodbc.connect("Driver={SQL Server};"
 cursor = cnxn.cursor()
 
 query = """
-SELECT DISTINCT
-	 
-      asutNbd_violations.IncidentTypeID
-      ,asutNbd_violations.IncidentID
-      ,asutNbd_violations.ViolationDate as Date_NAR
-      ,asutNbd_violations.BrigadeEnterpriseID
-      ,asutNbd_violations.ViolationID as ID_SP_NAR,
-
-	  rp.IncidentDate,
-      rp.RouteID,
-      rp.PersID,
-      rp.MIPersID as 'машинист инструктор'
-	
-      ,rd.[RouteDate]
-      ,rd.[RoadID]
-      ,rd.[IsApvo]
-      ,rd.[RouteTypeID]
-      ,rd.[SpsSerieID]
-      ,rd.[SpsGroupID]
-      ,rd.[KeID]
-      ,rd.[EnterpriseID]	
-      ,pr5.EnterpriseID
-
-	  ,CASE 
-		WHEN DATEDIFF(yyyy, pr5.DateFrom, getdate()) < 1 THEN 'group_0to1y'
-		WHEN DATEDIFF(yyyy, pr5.DateFrom, getdate()) >= 1 AND DATEDIFF(yyyy, pr5.DateFrom, getdate()) < 4 THEN 'group_1to3y'
-		WHEN DATEDIFF(yyyy, pr5.DateFrom, getdate()) >= 4 AND DATEDIFF(yyyy, pr5.DateFrom, getdate()) < 8 THEN 'group_3to8y'
-		WHEN DATEDIFF(yyyy, pr5.DateFrom, getdate()) >= 8 AND DATEDIFF(yyyy, pr5.DateFrom, getdate()) < 12 THEN 'group_8to12y'
-		WHEN DATEDIFF(yyyy, pr5.DateFrom, getdate()) >= 12 AND DATEDIFF(yyyy, pr5.DateFrom, getdate()) < 20 THEN 'group_12to20y'
-		WHEN DATEDIFF(yyyy, pr5.DateFrom, getdate()) >= 20 THEN 'group_20y'
+SELECT 
+    av.IncidentTypeID,
+    av.IncidentID,
+    av.ViolationDate as Date_NAR,
+    av.ViolationID as ID_SP_NAR,
+    rp.PersID,
+    rp.MIPersID as 'машинист инструктор',	
+	rd.RoadID,
+	rd.SpsSerieID,
+    rd.SpsGroupID,
+    rd.EnterpriseID,     
+	CASE 
+		WHEN pr5.work_time < 1 THEN 'group_0to1y'
+		WHEN pr5.work_time >= 1 AND pr5.work_time < 4 THEN 'group_1to3y'
+		WHEN pr5.work_time >= 4 AND pr5.work_time < 8 THEN 'group_3to8y'
+		WHEN pr5.work_time >= 8 AND pr5.work_time < 12 THEN 'group_8to12y'
+		WHEN pr5.work_time >= 12 AND pr5.work_time < 20 THEN 'group_12to20y'
+		WHEN pr5.work_time >= 20 THEN 'group_20y'
 		ELSE NULL 
-	  END AS DateFrom
-      
-	  ,pr5.DateTo
-      ,pr5.TabNum
-      ,pr5.IsDetached as 'уволен или нет'
+	END AS DateFrom,	
+    p.CurrIsDetached as 'fired', -- уволен или нет
+    p.MainTabNum as 'TabNum',     -- 'основной персонал это табельники людей'    
+    p.LastName,
+    p.FirstName,
+    p.PatrName,
+    p.CurrEnterpriseID as KOD_DEPO,
+	p.MainTabNum as 'подчиненные' 
+	
+	,x.MainTabNum as 'CurrTabNum' ----новое
+	,x.LastName as 'фамилия инструктора' ----новое
+	,rp.IncidentDate
 
-      ,personal.LastName
-      ,personal.FirstName
-      ,personal.PatrName
-      ,personal.CurrEnterpriseID  as KOD_DEPO
-      ,personal.CurrDateTo
-      ,personal.CurrTabNum
-      ,personal.CurrIsDetached
+from incidents rp
+join asutNbd_violations av on (av.IncidentID = rp.ID) 
+join report_routesIssue rd on (rd.RouteDate = rp.IncidentDate)
 
-      ,personal.MainTabNum as 'основной персонал это табельники людей'
-	  ,rr.[PersRegID]
-      ,rr.[RoutePostID]
-      
-	FROM asutNbd_violations 
-		inner JOIN incidents rp ON asutNbd_violations.CasseteID = rp.CasseteID
-		inner JOIN  [report_routesIssue] rd on rd.[RouteDate] = rp.IncidentDate
-		inner JOIN personal_registration AS PR5 ON rp.PersID = PR5.[PersID]
-	    inner JOIN personal ON pr5.[DateTo] = personal.[CurrDateTo]
-	    inner JOIN [routes_personal] rr ON pr5.[PersID] = rr.[PersRegID]
+join
+(
+select distinct p.ID, p.LastName, p.MainTabNum
+from personal p
+) x on (x.ID = rp.MIPersID)
+join personal p on (p.ID = rp.PersID)
+join
+(
+select DATEDIFF(yyyy,y.DateFrom, y.DateTo) as work_time, y.PersID
+	from
+	(
+	select pr.PersID, min(pr.DateFrom) as DateFrom,
+		max (
+		case
+			when pr.DateTo is null then pr.DateFrom
+			else pr.DateTo
+		end) as DateTo
+	from personal_registration pr
+	group by pr.PersID
+	) y
+) pr5 on pr5.PersID = p.ID
 
-	WHERE rp.MIPersID > 1
-    and pr5.IsDetached=0
-	and asutNbd_violations.ViolationDate >'2019-07-07 00:00:00.000'
+where 
+p.CurrIsDetached = 0 
+and av.ViolationDate >'2019-07-07 00:00:00.000'
 """
 
 data = pd.read_sql(query,cnxn)

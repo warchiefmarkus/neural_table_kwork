@@ -83,10 +83,6 @@ def login():
                             content=render_template( 'pages/login.html', form=form, msg=msg ) )
 
 
-
-
-
-
 cnxn = pyodbc.connect("Driver={SQL Server};"
                       "Server=asut-db.transinfocom.ru;"
                       "Port=1433;"
@@ -95,17 +91,20 @@ cnxn = pyodbc.connect("Driver={SQL Server};"
                       "Database=AsuSps;")
 cursor = cnxn.cursor()
 
+#-----------------------------------------------------------------------------------
+# GET DB TABLES
 def get_bd_tables():
-    file = open('sql/get_all_update_tables.sql', 'r')
-    query = file.read()
-    file.close()
+    query = "SELECT name FROM AsuSps.sys.Tables WHERE name LIKE '%table_%';"
     res = pd.read_sql(query,cnxn)['name'].tolist()
     res.sort()
     return res
 
+#-----------------------------------------------------------------------------------
 def short_name(name):
     name = name.split(" ")[0]
 
+#-----------------------------------------------------------------------------------
+# FORMAT QUERY FOR GET MACHINE_MAN_INSTRUCTOR
 def formate_query_machine(tablenames_list, machine_id):
     query= ""
     for idx, table_name in enumerate(tablenames_list):
@@ -122,12 +121,12 @@ SELECT DISTINCT
       ,[DateFrom] as стаж
       ,[SpsSerieID]
 	  ,[SpsGroupID]
-	  ,[CurrTabNum]
+	  ,[TabNum]
 	  ,[personal_probability]
       ,'"""+str(table_name)+"""' AS DATE
       ,[RoadID] as RoadID
 FROM [AsuSps].[dbo].["""+str(table_name)+"""]
-where [машинист_инструктор]="""+str(machine_id)+"""
+where [CurrTabNum]="""+str(machine_id)+"""
 """
         if (idx!=len(tablenames_list)-1):
             query+="""
@@ -135,11 +134,12 @@ UNION ALL
 """
     return query
     
-
-def formate_query_currtabnum(tablenames_list, currtabnum, mi):
+#-----------------------------------------------------------------------------------
+# FORMAT QUERY TO GET MACHINE_MANS OF INSTRUCTORS FROM DB
+def formate_query_machine_man(tablenames_list, employer):
     query= ""
     for idx, table_name in enumerate(tablenames_list):
-        print(table_name)
+        # and [машинист_инструктор]="""+str(mi)+"""
         query +=""" 
 SELECT DISTINCT 
        [LastName]
@@ -156,15 +156,12 @@ SELECT DISTINCT
       ,'"""+str(table_name)+"""' AS DATE
       ,[RoadID] as RoadID
 FROM [AsuSps].[dbo].["""+str(table_name)+"""]
-where [CurrTabNum]="""+str(currtabnum)+"""
-and [машинист_инструктор]="""+str(mi)+"""
-"""
+where [TabNum]="""+str(employer)
         if (idx!=len(tablenames_list)-1):
             query+="""
 UNION ALL
 """
     return query  
-
 
 def formate_query_risks(tablenames_list, id_sp_nar):
     query= ""
@@ -185,13 +182,6 @@ UNION ALL
 @app.template_filter('strftime')
 def _jinja2_filter_datetime(date, fmt=None):
     return datetime.datetime.strptime(date, '%Y%m%d').strftime('%d.%m.%y')
-    
-# App main route + generic routing
-# @app.route('/')
-# def index():    
-#     return render_template('layouts/default.html',content=render_template('pages/index.html'), tables_list=get_bd_tables())
-
-
 
 # App main route + generic routing
 @app.route('/', defaults={'path': 'index.html'})
@@ -203,44 +193,48 @@ def index(path):
     try:
         # try to match the pages defined in -> pages/<input file>
         return render_template('layouts/default.html',
-                                content=render_template( 'pages/'+path), tables_list=get_bd_tables())
+                                content=render_template( 'pages/'+path)) #, tables_list=get_bd_tables()
+            #   {% for each in tables_list %}
+            #   <li class="list-group-item" data="{{ each }}">{{ each | replace("table_", "") | strftime}}</li>
+            #   {% endfor %}
     except Exception as e:
         print(e)
         return render_template('layouts/auth-default.html',
                                 content=render_template( 'pages/404.html' ) )
 
 
-# GET DATABASE MI LIST
+#-----------------------------------------------------------------------------------
+#1 GET MACHINE_INSTRUCTOR BY CURRTABNUM
 @app.route('/getDB', methods=['POST'])
 def getDB():    
-    # MACHINE MANS
-    m_i = int(request.json['machine_instructor'])
-    html_dates = json.loads(request.json['date_range'])
-    isMipersid = request.json['isMipersid']
-    
-    if(isMipersid):
-        print("MIPERSID "+str(m_i))
-    else:
-        print("CURTAB TO MIPERID "+str(m_i))
-        m_i=int(pd.read_sql("""SELECT [mipersid],[currtabnum] FROM [AsuSps].[dbo].[dict] where [currtabnum]="""+str(m_i),cnxn)["mipersid"])
-        print(m_i)
+    currtabnum = int(request.json['machine_instructor'])
+    html_dates = request.json['date_range']
+    tables_list = get_bd_tables()
+    date_range=[]
+    from_date = datetime.datetime.strptime(html_dates.split("-")[0],'%m/%Y')
+    to_date = datetime.datetime.strptime(html_dates.split("-")[1],'%m/%Y')
 
-    date_range =[]
-    for date in html_dates:
-        date_range.append("table_"+datetime.datetime.strptime(date,'%d.%m.%y').strftime('%Y%m%d'))
-    print('M_I', m_i, "DATERANGE", date_range)
-    query = formate_query_machine(date_range,m_i)
+    for table in tables_list:
+        table_date = datetime.datetime.strptime(datetime.datetime.strptime(table.split("_")[1],'%Y%m%d').strftime('%m/%Y'),'%m/%Y') 
+        if(((table_date>=from_date)&(table_date<=to_date))):
+            date_range.append(table)
+    if(len(date_range)<1):
+        data = {'message': {}, 'tables': {}, "graphic_data": {}, 'isEmpty': 'true', 'code': 'SUCCESS'}        
+        return make_response(jsonify(data), 201)        
+
+    query = formate_query_machine(date_range, currtabnum)
+
     df = pd.read_sql(query,cnxn)
     df = df.drop_duplicates(df.columns, keep='last')
-    df["UID"] = df.LastName.str.cat(" "+df.FirstName).str.cat(" "+df.PatrName).str.cat(" "+df.CurrTabNum.astype(str))
+    df["UID"] = df.LastName.str.cat(" "+df.FirstName).str.cat(" "+df.PatrName).str.cat(" "+df.TabNum.astype(str))
     unique_grouped = df.groupby(['UID'])['ID_SP_NAR'].nunique().reset_index()
     unique_grouped['UID'] = unique_grouped["UID"].apply(lambda row: row.split(" ")[0]+" "+row.split(" ")[1][0]+"."+row.split(" ")[2][0]+". "+row.split(" ")[3])
     
     # GRAPHIC
-    graphic_data = [(lambda x: [str(df.loc[df.ID_SP_NAR ==str(144)]["расшифровка"][0])+" "+str(x), df.loc[df['ID_SP_NAR'] == str(x)]["personal_probability"].mean()]   )(x) for x in df.ID_SP_NAR.unique()[:10].astype(int)]
+    graphic_data = [(lambda x: [str(df.loc[df.ID_SP_NAR ==str(x)]["расшифровка"].values[0])+" "+str(x), df.loc[df.ID_SP_NAR == str(x)]["personal_probability"].mean()]   )(x) for x in df.ID_SP_NAR.unique()[:10].astype(int)]
     lables = [(lambda x: str(x[0]))(x) for x in graphic_data]
     data = [(lambda x: float(x[1]))(x) for x in graphic_data]
-
+    
     graphic_data = json.dumps({ "labels": lables,
                     "datasets": [{
                         "label": '%',
@@ -248,24 +242,20 @@ def getDB():
                     }]
     })
 
-    data = {'message': json.dumps(unique_grouped.values.tolist()), 'tables': json.dumps(date_range), "graphic_data":graphic_data, 'code': 'SUCCESS'}
+    data = {'message': json.dumps(unique_grouped.values.tolist()), 'tables': json.dumps(date_range), "graphic_data":graphic_data, 'isEmpty': 'false', 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
 
+#-----------------------------------------------------------------------------------
 # GET MACHINE MAN
-@app.route('/getCurrTabNum', methods=['POST'])
-def getCurrTabNum():
-    isMipersid = request.json['isMipersid']
-    currtab = request.json['currtab'].split(" ")[2]
+@app.route('/getMachineMans', methods=['POST'])
+def getMachineMans():
+
+    employer = request.json['currtab'].split(" ")[2]
     tables =  request.json['tables'].split(",")
-    mi = request.json['mi']
+   
+    query = formate_query_machine_man(tables, employer)
 
-    if(isMipersid):
-        print("MIPERSID "+str(mi))
-    else:
-        mi=int(pd.read_sql("""SELECT [mipersid],[currtabnum] FROM [AsuSps].[dbo].[dict] where [currtabnum]="""+str(mi),cnxn)["mipersid"])
-        print(mi)
-
-    query = formate_query_currtabnum(tables, currtab, mi)
+    print("Q ", query)
     df = pd.read_sql(query,cnxn)
     df = df.drop_duplicates(df.columns, keep='last')
     df['Количество'] = df.groupby('ID_SP_NAR')['ID_SP_NAR'].transform('count')
@@ -276,11 +266,6 @@ def getCurrTabNum():
         df['RoadCode'][idx] = uniq[str(row['ID_SP_NAR'])]
 
     df["NumLokSeries4"] = df["SpsSerieID"].astype(str) +"_"+ df["SpsGroupID"].astype(str)
-
-    # df["CountLockSeries"] = df["SpsSerieID"].astype(str) + df["SpsGroupID"].astype(str)
-    # uniq2 = df.groupby(['ID_SP_NAR'])['CountLockSeries'].nunique()
-    # for idx, row in df.iterrows():
-    #     df['CountLockSeries'][idx] = str(uniq2[str(row['ID_SP_NAR'])])
 
     df["CountLockSeries"] = df["SpsSerieID"].astype(str) +"_"+ df["SpsGroupID"].astype(str)+"_"+df["ID_SP_NAR"]
     vc = df["CountLockSeries"].value_counts()
@@ -301,7 +286,7 @@ def getCurrTabNum():
     data = {'table_data': json.dumps(df.values.tolist()), 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
 
-
+#-------------------------------------------------------------------------------
 def formate_query_split(tablenames_list):
     query= ""
     for idx, table_name in enumerate(tablenames_list):
@@ -315,6 +300,7 @@ UNION ALL
 """
     return query
 
+#-------------------------------------------------------------------------------
 def formate_query_road_id(tablenames_list, id_sp_nar, road_id):
     query= ""
     for idx, table_name in enumerate(tablenames_list):
@@ -349,19 +335,32 @@ UNION ALL
 """
     return query
 
+#-----------------------------------------------------------------------------
 # GET ROAD_ID SPLIT
 @app.route('/getRoadId', methods=['POST'])
 def getRoadId():
     road_id = request.json['road_id']
-    tablenames_list =  request.json['tables']
+    html_dates =  request.json['daterange']
+    tables_list = get_bd_tables()
+    date_range=[]
+    from_date = datetime.datetime.strptime(html_dates.split("-")[0],'%m/%Y')
+    to_date = datetime.datetime.strptime(html_dates.split("-")[1],'%m/%Y')
 
-    query = formate_query_split(tablenames_list)
+    for table in tables_list:
+        table_date = datetime.datetime.strptime(datetime.datetime.strptime(table.split("_")[1],'%Y%m%d').strftime('%m/%Y'),'%m/%Y') 
+        if(((table_date>=from_date)&(table_date<=to_date))):
+            date_range.append(table)
+    if(len(date_range)<1):
+        data = {'message': {}, 'tables': {}, "graphic_data": {}, 'isEmpty': 'true', 'code': 'SUCCESS'}        
+        return make_response(jsonify(data), 201)        
+
+    query = formate_query_split(date_range)
     df = pd.read_sql(query,cnxn)
     uniq_road_id=pd.DataFrame(df['ID_SP_NAR'].unique(), columns=["ID_SP_NAR"])
         
     uniq_road_id["AVERAGE"]=pd.Series()
     for idx, row in uniq_road_id.iterrows():    
-        uniq_road_id["AVERAGE"][idx] = (str(pd.read_sql(formate_query_road_id(tablenames_list,int(row[0]),road_id),cnxn).mean()))
+        uniq_road_id["AVERAGE"][idx] = (str(pd.read_sql(formate_query_road_id(date_range,int(row[0]),road_id),cnxn).mean()))
     uniq_road_id = uniq_road_id.sort_values('AVERAGE', ascending=True)
     data = {'table_data': json.dumps(uniq_road_id.values.tolist()), 'code': 'SUCCESS'}
     return make_response(jsonify(data), 201)
@@ -370,15 +369,28 @@ def getRoadId():
 @app.route('/getEnterpriseId', methods=['POST'])
 def getEnterpriseId():
     enterprise_id = request.json['enterprise_id']
-    tablenames_list =  request.json['tables']
+     
+    html_dates =  request.json['daterange']
+    tables_list = get_bd_tables()
+    date_range=[]
+    from_date = datetime.datetime.strptime(html_dates.split("-")[0],'%m/%Y')
+    to_date = datetime.datetime.strptime(html_dates.split("-")[1],'%m/%Y')
 
-    query = formate_query_split(tablenames_list)
+    for table in tables_list:
+        table_date = datetime.datetime.strptime(datetime.datetime.strptime(table.split("_")[1],'%Y%m%d').strftime('%m/%Y'),'%m/%Y') 
+        if(((table_date>=from_date)&(table_date<=to_date))):
+            date_range.append(table)
+    if(len(date_range)<1):
+        data = {'message': {}, 'tables': {}, "graphic_data": {}, 'isEmpty': 'true', 'code': 'SUCCESS'}        
+        return make_response(jsonify(data), 201)        
+
+    query = formate_query_split(date_range)
     df = pd.read_sql(query,cnxn)
     uniq_enterprise_id=pd.DataFrame(df['ID_SP_NAR'].unique(), columns=["ID_SP_NAR"])
     
     uniq_enterprise_id["AVERAGE"]=pd.Series()    
     for idx, row in uniq_enterprise_id.iterrows(): 
-        p = pd.read_sql(formate_query_enterprise_id(tablenames_list,int(row[0]),enterprise_id),cnxn).mean() 
+        p = pd.read_sql(formate_query_enterprise_id(date_range,int(row[0]),enterprise_id),cnxn).mean() 
         uniq_enterprise_id["AVERAGE"][idx] = str(p)
     uniq_enterprise_id = uniq_enterprise_id.sort_values('AVERAGE', ascending=True)
     data = {'table_data': json.dumps(uniq_enterprise_id.values.tolist()), 'code': 'SUCCESS'}

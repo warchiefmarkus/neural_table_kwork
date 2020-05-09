@@ -1,322 +1,3 @@
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
-<script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
-<link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css"
-  rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
-
-<script>
-  // GLOBAL VAR MI DATE RANGE
-  var daterange = {};
-
-  // MACHINE_INGENEERS LIST ADD ITEM
-  function add(name, col) {
-    var list = document.getElementById('machine_list');
-    var li = document.createElement("li");
-    li.setAttribute("data", name)
-    li.className = "list-group-item"
-    li.style = "cursor: pointer;"
-
-    var row = document.createElement("div");
-    row.className = "row"
-    var col1 = document.createElement("div");
-    col1.className = "col-10"
-    col1.innerHTML = name.split(" ")[0] + " " + name.split(" ")[1] + " (" + name.split(" ")[2] + ")";
-    var col2 = document.createElement("div");
-    col2.className = "col-2 text-right"
-    col2.innerHTML = col;
-
-    row.append(col1);
-    row.append(col2);
-    li.appendChild(row);
-    list.appendChild(li);
-  }
-
-  // POST REQUEST TO GET TABLE DATA 
-  function getDB(m_i) {    
-    if (daterange.length > 0) {
-      if (document.getElementById('machine_instructor').value.length > 0) {
-        $.ajax
-          ({
-            type: "POST",
-            url: "{{url_for('getDB')}}",
-            dataType: 'json',
-            async: false,
-            headers: { "Accept-Encoding": "gzip" },
-            contentType: 'application/json',
-            data: JSON.stringify({ "machine_instructor": m_i, "date_range": daterange, "isMipersid":document.getElementById('machine_instructor_toogle').checked}),
-            success: function (msg) {
-              // SET CHOOSED TABLES NAMES
-              document.getElementById('get-checked-data-mi').setAttribute("data", JSON.parse(msg['tables']))
-              // APPEND MACHINE MANS ROWS
-              $('#machine_list').empty();
-              JSON.parse(msg['message']).forEach(element => {
-                add(element[0], element[1]);
-              });
-
-              // SET GRAPHIC DATA
-              var $chart = $('#chart-sales');
-              var salesChart = new Chart($chart, {
-                type: 'horizontalBar',
-                options: {
-                  layout: {
-                    padding: {
-                      left: $('#chart-card').width() / 4,
-                      right: 0,
-                      top: 0,
-                      bottom: 0
-                    }
-                  },
-                  scales: {
-                    yAxes: [{
-                      gridLines: {
-                        color: Charts.colors.gray[900],
-                        zeroLineColor: Charts.colors.gray[900]
-                      },
-                      ticks: { fontSize: 20 }
-                    }]
-                  },
-                  tooltips: {}
-                },
-                data: JSON.parse(msg["graphic_data"])
-              });
-              // Save to jQuery object
-              $chart.data('chart', salesChart);
-
-              // ON CLICK MI LIST ITEM
-              $("#machine_list .list-group-item").on("click", function () {
-                $(" .list-group-item.active").removeClass('active');
-                $(this).addClass('active');
-
-                if (this.getAttribute("data").length > 0) {
-                  console.log(this.getAttribute("data"))
-
-                  $.ajax
-                    ({
-                      type: "POST",
-                      url: "{{url_for('getCurrTabNum')}}",
-                      dataType: 'json',
-                      async: false,
-                      headers: { "Accept-Encoding": "gzip" },
-                      contentType: 'application/json',
-                      data: JSON.stringify({ "mi": document.getElementById('machine_instructor').value, "currtab": this.getAttribute("data"), "tables": document.getElementById('get-checked-data-mi').getAttribute("data"), "isMipersid":document.getElementById('machine_instructor_toogle').checked}),
-                      success: function (msg) {
-                        console.log("SUCCESS " + JSON.parse(msg['table_data'])[0]);
-
-                        $("#currtabnum_table  tr:not(:first) ").remove();
-                        JSON.parse(msg['table_data']).forEach(element => {
-                          $("#currtabnum_table tr:last").after("<tr>" +
-                            "<td>" + element[0] + "</td>" +
-                            "<td>" + element[1] + "</td>" +
-                            "<td>" + element[2] + "</td>" +
-                            "<td>" + element[3] + "</td>" +
-                            "<td>" + element[4] + "</td>" +
-                            "<td>" + element[5] + "</td>" +
-                            "<td>" + element[6] + "</td>" +
-                            "<td>" + element[7] + "</td>" +
-                            "<td>" + element[8] + "</td>" +
-                            "<td>" + element[15] + "</td>" +
-                            "<td>" + element[16] + "</td>" +
-                            // "<td>"+element[14]+"</td>"+                    
-                            "<td>" + element[9] + "</td>" +
-                            "<td>" + element[10] + "</td>" +
-                            "<td>" + element[11] + "</td>" +
-                            "<td>" + element[12] + "</td>" +
-                            "<td>" + element[13] + "</td>" +
-                            "<td>" + element[17] + "</td>" +
-                            "</tr>");
-                        });  
-
-                      },
-                      error: function (xhr, textStatus, errorThrown) {
-                        console.log("ERROR")
-                      }
-                    })
-
-                } else {
-                  alert('CHOOSE DATES');
-                }
-
-              });
-
-
-
-
-            },
-            error: function (xhr, textStatus, errorThrown) {
-              console.log("ERROR")
-            }
-          })
-      } else {
-        alert("FILL MACHINE-INSTRICTOR NUMBER");
-      }
-    } else {
-      alert('CHOOSE DATES');
-    }
-
-  }
-
-  // MI DATE LIST
-  $(function () {
-
-    $('.list-group.checked-list-box .list-group-item').each(function () {
-      var $widget = $(this),
-        $checkbox = $('<input style="visibility: hidden" type="checkbox" class="hidden" />'),
-        color = ($widget.data('color') ? $widget.data('color') : "primary"),
-        style = ($widget.data('style') == "button" ? "btn-" : "list-group-item-"),
-        settings = {
-        };
-
-      $widget.css('cursor', 'pointer')
-      $widget.append($checkbox);
-
-      $widget.on('click', function () {
-        $checkbox.prop('checked', !$checkbox.is(':checked'));
-        $checkbox.triggerHandler('change');
-        updateDisplay();
-      });
-      $checkbox.on('change', function () {
-        updateDisplay();
-      });
-
-      function updateDisplay() {
-        var isChecked = $checkbox.is(':checked');
-        $widget.data('state', (isChecked) ? "on" : "off");
-        if (isChecked) {
-          $widget.addClass("button" + ' active');
-        } else {
-          $widget.removeClass("success" + ' active');
-        }
-      }
-
-      function init() {
-        if ($widget.data('checked') == true) {
-          $checkbox.prop('checked', !$checkbox.is(':checked'));
-        }
-        updateDisplay();
-      }
-      init();
-    });
-
-    $('#get-checked-data').on('click', function (event) {
-      event.preventDefault();
-      var checkedItems = [], counter = 0;
-      $('#check-list-box').find('li.active').each(function (idx, li) {
-        checkedItems.push($(li).text());
-        counter++;
-      });
-      daterange = JSON.stringify(checkedItems);
-    });
-  })
-
-// GET ROAD ID SPLIT
-  function getRoadId() {    
-    console.log(document.getElementById('road_id_input').value)
-    if (document.getElementById('road_id_input').value.length > 0) {
-        if ( daterange.length > 0) {
-          var tables = []; 
-          $('ul#check-list-box').find('li.active').each(function (ind){tables.push(this.getAttribute("data"))});
-
-        $.ajax
-          ({
-            type: "POST",
-            url: "{{url_for('getRoadId')}}",
-            dataType: 'json',
-            async: false,
-            headers: { "Accept-Encoding": "gzip" },
-            contentType: 'application/json',
-            data: JSON.stringify({ "road_id": document.getElementById('road_id_input').value, "tables": tables}),
-            success: function (msg) {
-              // APPEND MACHINE MANS ROWS
-              $('#road_id_list').empty();
-              JSON.parse(msg['table_data']).forEach(element => {
-                addRoadIdRow(element[0], parseFloat(element[1]).toFixed(2));
-              });
-
-            },
-            error: function (xhr, textStatus, errorThrown) {
-              console.log("ERROR")
-            }
-          })
-      } else {
-        alert("CHOOSE DATES");
-      }
-    }else{
-        alert("FILL ROAD_ID");
-      }
-
-  }
-
-    function addRoadIdRow(id_sp_nar, probability) {
-      var list = document.getElementById('road_id_list');
-      var li = document.createElement("li");
-      li.className = "list-group-item d-flex justify-content-between align-items-center"
-      li.style = "cursor: pointer;"
-      li.innerHTML = id_sp_nar;    
-      var span = document.createElement("span");
-      span.className = "badge badge-primary badge-pill";
-      span.innerHTML = probability;
-      li.appendChild(span);
-      list.appendChild(li);
-  }
-
-  // GET ENTERPRISEID SPLIT
-  function getEnterpriseId() {    
-    if (document.getElementById('enterprise_id_input').value.length > 0) {
-        if ( daterange.length > 0) {
-
-          var tables = []; 
-          $('ul#check-list-box').find('li.active').each(function (ind){tables.push(this.getAttribute("data"))});
-
-        $.ajax
-          ({
-            type: "POST",
-            url: "{{url_for('getEnterpriseId')}}",
-            dataType: 'json',
-            async: false,
-            headers: { "Accept-Encoding": "gzip" },
-            contentType: 'application/json',
-            data: JSON.stringify({ "enterprise_id": document.getElementById('enterprise_id_input').value, "tables": tables}),
-            success: function (msg) {
-              console.log(msg)
-              // APPEND MACHINE MANS ROWS
-              $('#enterprise_id_list').empty();
-              JSON.parse(msg['table_data']).forEach(element => {
-                addEnterpriseIdRow(element[0], parseFloat(element[1]).toFixed(2));
-              });
-
-            },
-            error: function (xhr, textStatus, errorThrown) {
-              console.log("ERROR")
-            }
-          })
-      } else {
-        alert("CHOOSE DATES");
-      }
-    }else{
-        alert("FILL ROAD_ID");
-      }
-
-  }
-
-    function addEnterpriseIdRow(id_sp_nar, probability) {
-      var list = document.getElementById('enterprises_id_list');
-      var li = document.createElement("li");
-      li.className = "list-group-item d-flex justify-content-between align-items-center"
-      li.style = "cursor: pointer;"
-      li.innerHTML = id_sp_nar;      
-      var span = document.createElement("span");
-      span.className = "badge badge-primary badge-pill";
-      span.innerHTML = probability;
-      li.appendChild(span);
-      list.appendChild(li);
-  }
-
-
-</script>
-
-
-
 <!-- Sidenav -->
 <nav class="navbar navbar-vertical fixed-left navbar-expand-md navbar-light bg-white" id="sidenav-main">
   <div class="container-fluid">
@@ -355,37 +36,52 @@
       <!-- LEFT SIDE -->
       <div class="container" style="margin-top:20px;">
         <div class="col-xl-12">
+
           <h5 style="margin-bottom:10px;" id="console" class="text-center">Анализируемый период</h5>
-          <!-- DATE LIST -->
-          <div id="get-checked-data" class="panel panel-default" style="height: 300px; overflow: auto;">
-            <ul style="height:300px; overflow:hidden; overflow-y:scroll;" id="check-list-box"
-              class="list-group checked-list-box">
 
-              {% for each in tables_list %}
-              <li class="list-group-item" data="{{ each }}">{{ each | replace("table_", "") | strftime}}</li>
-              {% endfor %}
-
-            </ul>
-          </div>
-          <label style="margin-top:10px;" for="textInput">Номер машиниста-инструктора</label>
-          <!-- MI INPUT -->
-          <div class="row">
-            <div class="col-6">
-              <input type="text" id="machine_instructor" value="12488" class="form-control mb-4" placeholder="">
+          <!-- DATERANGEPICKER  -->
+          <div class="input-daterange row align-items-center">
+            <div class="col">
+                <div class="form-group">
+                    <div class="input-group input-group-alternative">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="ni ni-calendar-grid-58"></i></span>
+                        </div>
+                        <input id="from" class="form-control" placeholder="Start date" type="text" value="05/2020">
+                    </div>
+                </div>
             </div>
-            <div clas="col-6">
-              <input id="machine_instructor_toogle" type="checkbox" checked data-toggle="toggle" data-onstyle="primary"
-                data-on="mipersid" data-off="currtabnum">
+            <div class="col">
+                <div class="form-group">
+                    <div class="input-group input-group-alternative">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="ni ni-calendar-grid-58"></i></span>
+                        </div>
+                        <input id="to" class="form-control" placeholder="End date" type="text" value="05/2020">
+                    </div>
+                </div>
             </div>
+        </div>
 
+        <!-- MI INPUT -->
+        <div class="row">
+          <div class="col-12">
+            <input type="text" id="machine_instructor" value="92380685" class="form-control mb-4" placeholder="">
           </div>
-          <!-- DB LOAD BUTTON -->
+          <div style="display: none; width: 0;" clas="col-6">
+            <input disabled id="machine_instructor_toogle" type="checkbox" checked data-toggle="toggle" data-onstyle="primary"
+              data-on="currtabnum" data-off="mipersid">
+          </div>
+
+        </div> 
+
+          <!-- GET DB BUTTON -->
           <button type="button" class="btn-primary btn-lg btn-block"
             onclick="getDB(document.getElementById('machine_instructor').value)">ВЫВЕСТИ ОТЧЕТ</button>
         </div>
       </div>
 
-      <!-- MI LIST -->
+      <!-- MACHINE_MAN_INSTRUCTORS LIST -->
       <div style="padding-top: 10px;" class="container-fluid">
         <div class="col-xl-12" id="result_panel">
 

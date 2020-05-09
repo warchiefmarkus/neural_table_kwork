@@ -272,16 +272,27 @@ uniq_enterprise_id=pd.DataFrame(df['ID_SP_NAR'].unique(), columns=["ID_SP_NAR"])
 #--road_id
 uniq_enterprise_id["AVERAGE"]=pd.Series()
 for idx, row in uniq_enterprise_id.iterrows(): 
-    p= str(pd.read_sql(formate_query_road_id(tablenames_list,int(row[0]),enterprise_id),cnxn).mean())    
+    p= pd.read_sql(formate_query_road_id(tablenames_list,int(row[0]),enterprise_id),cnxn).mean() 
     print(p)
     uniq_enterprise_id["AVERAGE"][idx] = p
     
 print(uniq_enterprise_id.values.tolist())
     
 
+["mipersid"]
+AA=pd.read_sql("""SELECT TOP(1) [машинист_инструктор],[CurrTabNum] FROM [AsuSps].[dbo].[table_20200329] where [CurrTabNum]=51439390""",cnxn)
+
     
     
-    
+1) разделение вверх 
+
+2)	период должен выбираться обычным способом: С (число) по (число). Сейчас я вообще не понял, что выбирается. Сутки?
+тут надо сделать  просто типа календарника
+
+3) currtabnum -> он теперь называется x.MainTabNum as 'табельный номер инструктора' 
+   'основной персонал это табельники людей' для подчинныех
+ 
+4)	Нужен вывод в эксель всех таблиц для печати.
     
     
     
